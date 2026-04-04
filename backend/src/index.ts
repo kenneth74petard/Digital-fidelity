@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
+import fs from 'fs';
 
 import { getDb } from './db/schema';
 import restaurantRouter from './routes/restaurant';
@@ -155,15 +157,24 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Serve Expo web static build (frontend + API on same server = same origin)
+const publicDir = path.join(__dirname, '../public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  // SPA fallback: serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+      res.sendFile(path.join(publicDir, 'index.html'));
+    }
+  });
+  console.log(`🌐 Frontend served from: ${publicDir}`);
+}
+
 app.listen(PORT, () => {
-  console.log(`\n🚀 Fidelity Backend running on port ${PORT}`);
+  console.log(`\n🚀 Fidelity App running on port ${PORT}`);
   console.log(`📊 Mode: ${process.env.SIMULATION_MODE === 'true' ? '🔶 SIMULATION' : '✅ PRODUCTION'}`);
   console.log(`🗄️  Database: ${process.env.DB_PATH || './fidelity.db'}`);
-  console.log(`\nEndpoints disponibles:`);
-  console.log(`  GET  http://localhost:${PORT}/health`);
-  console.log(`  POST http://localhost:${PORT}/api/restaurant/setup`);
-  console.log(`  GET  http://localhost:${PORT}/api/customers?restaurantId=xxx`);
-  console.log(`  GET  http://localhost:${PORT}/api/stats/:restaurantId`);
+  console.log(`\n📱 Ouvrez l'app: http://localhost:${PORT}`);
 });
 
 export default app;

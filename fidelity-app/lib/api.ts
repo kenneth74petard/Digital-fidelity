@@ -1,11 +1,10 @@
 import axios from 'axios';
 
-// Sur le web, utiliser le même hostname que le navigateur (port 3000)
-// Cela permet à l'iPhone d'atteindre l'API via la même IP que le frontend
+// Sur le web, utiliser des URLs relatives (le frontend et l'API sont servis depuis le même serveur)
+// Sur mobile natif, utiliser la variable d'environnement
 function getBaseUrl(): string {
   if (typeof window !== 'undefined' && window.location) {
-    const { protocol, hostname } = window.location;
-    return `${protocol}//${hostname}:3000`;
+    return ''; // URLs relatives : /api/... → même serveur
   }
   return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 }
