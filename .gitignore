@@ -1,0 +1,33 @@
+node_modules/
+dist/
+*.js.map
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Apple certificates — NEVER commit these!
+*.pem
+*.p8
+*.key
+*.cer
+*.p12
+
+# Expo / React Native
+fidelity-app/.expo/
+fidelity-app/android/
+fidelity-app/ios/
+fidelity-app/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
