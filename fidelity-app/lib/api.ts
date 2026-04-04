@@ -1,7 +1,16 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// Sur le web, utiliser le même hostname que le navigateur (port 3000)
+// Cela permet à l'iPhone d'atteindre l'API via la même IP que le frontend
+function getBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location) {
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:3000`;
+  }
+  return process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+}
+
+const BASE_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: BASE_URL,
