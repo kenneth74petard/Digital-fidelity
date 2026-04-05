@@ -186,7 +186,7 @@ function CustomerCard({
   onView: () => void;
   onDetail: () => void;
 }) {
-  const initials = `${customer.first_name[0]}${customer.last_name[0]}`.toUpperCase();
+  const initials = `${customer.first_name?.[0] ?? ''}${customer.last_name?.[0] ?? ''}`.toUpperCase() || '?';
   const hasReward = customer.stamps >= stampGoal;
   const displayStamps = Math.min(stampGoal, 10);
 

@@ -22,7 +22,8 @@ export default function SettingsScreen() {
   const [pointsPerVisit, setPointsPerVisit] = useState(restaurant?.points_per_visit || 100);
   const [saving, setSaving] = useState(false);
 
-  const marketingCount = customers.filter((c) => c.marketing_consent).length;
+  // SQLite stores booleans as 0/1 integers — use Boolean() to normalise
+  const marketingCount = customers.filter((c) => Boolean(c.marketing_consent)).length;
 
   const handleSave = async () => {
     if (!name.trim()) { Alert.alert('Erreur', 'Le nom est requis'); return; }

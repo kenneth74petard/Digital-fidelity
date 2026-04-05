@@ -36,6 +36,10 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
       if (onboarded === 'true' && restaurantId) {
         set({ isOnboarded: true });
         await get().loadRestaurant(restaurantId);
+        // If restaurant failed to load, fall back to onboarding
+        if (!get().restaurant) {
+          set({ isOnboarded: false, isLoading: false });
+        }
       } else {
         set({ isOnboarded: false, isLoading: false });
       }
@@ -50,7 +54,8 @@ export const useRestaurantStore = create<RestaurantState>((set, get) => ({
       const res = await restaurantApi.get(id);
       set({ restaurant: res.data.data, isLoading: false });
     } catch (err) {
-      set({ error: 'Impossible de charger le restaurant', isLoading: false });
+      // Restaurant unreachable: reset loading so app doesn't block
+      set({ error: 'Impossible de charger le restaurant', isLoading: false, restaurant: null });
     }
   },
 

@@ -3,7 +3,10 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+// DateTimePicker only works on native — use text input fallback on web
+const DateTimePicker = Platform.OS !== 'web'
+  ? require('@react-native-community/datetimepicker').default
+  : null;
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useNotificationsStore } from '../../stores/notificationsStore';
 import { useCustomersStore } from '../../stores/customersStore';
@@ -269,24 +272,38 @@ function ScheduleTab({
       <TextInput style={[styles.input, styles.textArea]} value={body} onChangeText={(t) => setBody(t.slice(0, 150))} placeholder="Message..." placeholderTextColor={Colors.textSecondary} multiline textAlignVertical="top" />
 
       <Text style={styles.fieldLabel}>Date et heure d'envoi</Text>
-      <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
-        <Text style={styles.datePickerText}>
-          📅 {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
-        </Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={scheduledDate}
-          mode="datetime"
-          minimumDate={new Date(Date.now() + 60 * 60 * 1000)}
-          onChange={(_, date) => {
-            setShowDatePicker(false);
-            if (date) setScheduledDate(date);
+      {Platform.OS === 'web' ? (
+        <TextInput
+          style={styles.input}
+          value={scheduledDate.toISOString().slice(0, 16)}
+          onChangeText={(val) => {
+            const d = new Date(val);
+            if (!isNaN(d.getTime())) setScheduledDate(d);
           }}
-          display="spinner"
-          themeVariant="dark"
+          placeholder="YYYY-MM-DDTHH:MM"
+          placeholderTextColor={Colors.textSecondary}
         />
+      ) : (
+        <>
+          <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
+            <Text style={styles.datePickerText}>
+              📅 {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && DateTimePicker && (
+            <DateTimePicker
+              value={scheduledDate}
+              mode="datetime"
+              minimumDate={new Date(Date.now() + 60 * 60 * 1000)}
+              onChange={(_: any, date?: Date) => {
+                setShowDatePicker(false);
+                if (date) setScheduledDate(date);
+              }}
+              display="spinner"
+              themeVariant="dark"
+            />
+          )}
+        </>
       )}
 
       <TouchableOpacity

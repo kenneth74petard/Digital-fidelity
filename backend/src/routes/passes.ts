@@ -79,8 +79,8 @@ router.post('/register', (req: Request, res: Response) => {
   // TODO [PRODUCTION]: Store device token and associate with pass for push updates
   // This endpoint is called by iOS Wallet when a pass is added
   console.log('[SIMULATION] Apple Wallet registration received (not implemented in simulation mode)');
-  console.log('  Device:', req.params.deviceLibraryIdentifier);
-  console.log('  Pass:', req.params.passTypeIdentifier, req.params.serialNumber);
+  console.log('  Device:', req.body.deviceLibraryIdentifier);
+  console.log('  Pass:', req.body.passTypeIdentifier, req.body.serialNumber);
   return res.status(200).json({ message: 'Registration acknowledged (simulation mode)' });
 });
 

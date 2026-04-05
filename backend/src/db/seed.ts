@@ -96,4 +96,9 @@ async function seed() {
   console.log('   Sauvegardez cet ID pour la configuration de l\'app mobile.');
 }
 
-seed().catch(console.error);
+seed()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('❌ Erreur lors du seeding:', err);
+    process.exit(1);
+  });

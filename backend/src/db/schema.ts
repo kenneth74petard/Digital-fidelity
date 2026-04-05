@@ -96,6 +96,19 @@ function initSchema(db: Database.Database): void {
       performed_by TEXT NOT NULL DEFAULT 'system',
       created_at DATETIME NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Indexes for frequent queries
+    CREATE INDEX IF NOT EXISTS idx_customers_restaurant_id ON customers(restaurant_id);
+    CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+    CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at);
+    CREATE INDEX IF NOT EXISTS idx_passes_customer_id ON passes(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_restaurant_id ON notifications(restaurant_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status);
+    CREATE INDEX IF NOT EXISTS idx_stamps_history_customer_id ON stamps_history(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_stamps_history_created_at ON stamps_history(created_at);
+
+    -- Unique constraint: one email per restaurant
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_customers_email_restaurant ON customers(email, restaurant_id);
   `);
 }
 

@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { Colors } from '../../constants/theme';
 
@@ -16,7 +16,14 @@ function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focu
 export default function TabsLayout() {
   const { isOnboarded, isLoading } = useRestaurantStore();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Text style={styles.loadingEmoji}>🏆</Text>
+        <ActivityIndicator color={Colors.gold} size="large" style={{ marginTop: 16 }} />
+      </View>
+    );
+  }
   if (!isOnboarded) return <Redirect href="/onboarding" />;
 
   return (
@@ -66,6 +73,11 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1, backgroundColor: Colors.background,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  loadingEmoji: { fontSize: 64 },
   tabBar: {
     backgroundColor: Colors.tabBar,
     borderTopColor: Colors.border,

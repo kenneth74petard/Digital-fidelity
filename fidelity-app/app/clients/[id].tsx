@@ -52,6 +52,7 @@ export default function ClientDetailScreen() {
       loadCustomer(id);
       loadHistory(id);
     }
+    return () => clearSelected();
   }, [id]);
 
   useEffect(() => {
@@ -136,7 +137,7 @@ export default function ClientDetailScreen() {
     );
   }
 
-  const initials = `${customer.first_name[0]}${customer.last_name[0]}`.toUpperCase();
+  const initials = `${customer.first_name?.[0] ?? ''}${customer.last_name?.[0] ?? ''}`.toUpperCase() || '?';
   const hasReward = customer.stamps >= stampGoal;
 
   return (

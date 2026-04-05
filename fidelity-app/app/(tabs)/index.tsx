@@ -157,7 +157,7 @@ function MiniBarChart({ data }: { data: Array<{ date: string; count: number }> }
 }
 
 function CustomerRow({ customer, stampGoal }: { customer: Customer; stampGoal: number }) {
-  const initials = `${customer.first_name[0]}${customer.last_name[0]}`.toUpperCase();
+  const initials = `${customer.first_name?.[0] ?? ''}${customer.last_name?.[0] ?? ''}`.toUpperCase() || '?';
   const hasReward = customer.stamps >= stampGoal;
 
   return (

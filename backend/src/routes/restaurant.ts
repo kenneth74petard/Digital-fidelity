@@ -43,7 +43,9 @@ router.post('/setup', (req: Request, res: Response) => {
       vapidKeys.privateKey
     );
 
-    const restaurant = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(id);
+    const restaurant = db.prepare(
+      'SELECT id, name, description, color_primary, color_secondary, logo_emoji, stamp_goal, points_per_visit, vapid_public_key, created_at FROM restaurants WHERE id = ?'
+    ).get(id);
     return res.status(201).json({ data: restaurant });
   } catch (error) {
     console.error('Setup error:', error);
@@ -55,7 +57,9 @@ router.post('/setup', (req: Request, res: Response) => {
 router.get('/:id', (req: Request, res: Response) => {
   try {
     const db = getDb();
-    const restaurant = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(req.params.id);
+    const restaurant = db.prepare(
+      'SELECT id, name, description, color_primary, color_secondary, logo_emoji, stamp_goal, points_per_visit, vapid_public_key, created_at FROM restaurants WHERE id = ?'
+    ).get(req.params.id);
     if (!restaurant) {
       return res.status(404).json({ error: 'Restaurant non trouvé' });
     }
@@ -100,7 +104,9 @@ router.put('/:id', (req: Request, res: Response) => {
       req.params.id
     );
 
-    const updated = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(req.params.id);
+    const updated = db.prepare(
+      'SELECT id, name, description, color_primary, color_secondary, logo_emoji, stamp_goal, points_per_visit, vapid_public_key, created_at FROM restaurants WHERE id = ?'
+    ).get(req.params.id);
     return res.json({ data: updated });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur serveur' });

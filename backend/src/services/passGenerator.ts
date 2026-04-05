@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import zlib from 'zlib';
 import JSZip from 'jszip';
 
 // TODO [PRODUCTION]: Import passkit-generator and use real Apple certificates
@@ -186,7 +186,7 @@ function generateColoredPng(hexColor: string): Buffer {
   const b = result ? parseInt(result[3], 16) : 76;
 
   const rawData = Buffer.from([0, r, g, b]); // filter byte + RGB
-  const compressed = require('zlib').deflateSync(rawData);
+  const compressed = zlib.deflateSync(rawData);
   const idatChunk = createPngChunk('IDAT', compressed);
 
   // IEND chunk
