@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRestaurantStore } from '../stores/restaurantStore';
 import { Colors } from '../constants/theme';
@@ -10,6 +11,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     checkOnboarding();
+
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.documentElement.style.backgroundColor = Colors.background;
+      document.body.style.backgroundColor = Colors.background;
+      document.body.style.color = Colors.textPrimary;
+    }
   }, []);
 
   return (

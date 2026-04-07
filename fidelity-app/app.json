@@ -4,10 +4,8 @@
     "slug": "fidelity-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f0f14"
     },
@@ -17,16 +15,11 @@
       "bundleIdentifier": "com.fidelitepro.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0f0f14"
-      },
       "package": "com.fidelitepro.app"
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",
@@ -39,7 +32,6 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
           "color": "#c9a84c"
         }
       ]

@@ -13,7 +13,7 @@ export function initVapid(publicKey: string, privateKey: string, email: string):
 
 /**
  * Send push notification to a single subscriber
- * In SIMULATION_MODE, logs to console instead of sending
+ * In non-live mode, logs to console instead of sending
  */
 export async function sendPushToSubscription(
   subscription: webpush.PushSubscription,
@@ -21,7 +21,7 @@ export async function sendPushToSubscription(
   body: string,
   restaurantName: string
 ): Promise<boolean> {
-  const simulationMode = process.env.SIMULATION_MODE === 'true';
+  const pushLiveMode = process.env.PUSH_LIVE_MODE === 'true';
 
   const payload = JSON.stringify({
     title,
@@ -31,9 +31,8 @@ export async function sendPushToSubscription(
     data: { restaurantName },
   });
 
-  if (simulationMode) {
-    // TODO [PRODUCTION]: Remove simulation log and use real webpush.sendNotification()
-    console.log(`[SIMULATION] Push notification would be sent:`);
+  if (!pushLiveMode) {
+    console.log(`[PUSH_DRY_RUN] Push notification queued for preview:`);
     console.log(`  Title: ${title}`);
     console.log(`  Body: ${body}`);
     console.log(`  Recipient endpoint: ${subscription.endpoint?.substring(0, 50)}...`);
@@ -60,7 +59,7 @@ export async function sendToAllCustomers(
   restaurantName: string
 ): Promise<number> {
   const db = getDb();
-  const simulationMode = process.env.SIMULATION_MODE === 'true';
+  const pushLiveMode = process.env.PUSH_LIVE_MODE === 'true';
 
   // Get all customers with marketing consent and push subscription
   const customers = db.prepare(`
@@ -76,9 +75,8 @@ export async function sendToAllCustomers(
 
   const eligibleCount = customers.length;
 
-  if (simulationMode) {
-    // TODO [PRODUCTION]: Send real push notifications via webpush / APNs
-    console.log(`[SIMULATION] Would send notification to ${eligibleCount} customers:`);
+  if (!pushLiveMode) {
+    console.log(`[PUSH_DRY_RUN] Notification preview for ${eligibleCount} customers:`);
     console.log(`  Title: "${title}"`);
     console.log(`  Body: "${body}"`);
     for (const c of customers) {

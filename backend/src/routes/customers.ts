@@ -3,41 +3,83 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db/schema';
 
 const router = Router();
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function getRestaurantScopeId(req: Request, res: Response): string | null {
+  const scopeId = String(req.restaurantScopeId || '').trim();
+  if (!scopeId) {
+    res.status(403).json({ error: 'Scope restaurant introuvable pour cette requete' });
+    return null;
+  }
+  return scopeId;
+}
 
 // GET /api/customers?restaurantId=xxx&search=xxx&filter=xxx
 router.get('/', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { restaurantId, search, filter } = req.query as Record<string, string>;
+
+    const parsedLimit = Number.parseInt(String(req.query.limit ?? '50'), 10);
+    const parsedOffset = Number.parseInt(String(req.query.offset ?? '0'), 10);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 50;
+    const offset = Number.isFinite(parsedOffset) ? Math.max(parsedOffset, 0) : 0;
 
     if (!restaurantId) {
       return res.status(400).json({ error: 'restaurantId est requis' });
     }
 
-    let query = `
-      SELECT c.*, p.serial_number
-      FROM customers c
-      LEFT JOIN passes p ON p.customer_id = c.id
-      WHERE c.restaurant_id = ?
-    `;
+    if (restaurantId !== scopeRestaurantId) {
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+    }
+
+    let whereClause = `WHERE c.restaurant_id = ?`;
     const params: (string | number)[] = [restaurantId];
 
     if (search) {
-      query += ` AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ?)`;
+      whereClause += ` AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ?)`;
       const like = `%${search}%`;
       params.push(like, like, like);
     }
 
     if (filter === 'active') {
-      query += ` AND c.created_at >= datetime('now', '-30 days')`;
+      whereClause += ` AND c.created_at >= datetime('now', '-30 days')`;
     } else if (filter === 'reward') {
-      query += ` AND c.stamps >= (SELECT stamp_goal FROM restaurants WHERE id = c.restaurant_id)`;
+      whereClause += ` AND c.stamps >= (SELECT stamp_goal FROM restaurants WHERE id = c.restaurant_id)`;
     }
 
-    query += ` ORDER BY c.created_at DESC`;
+    const total = (db.prepare(`
+      SELECT COUNT(*) as count
+      FROM customers c
+      ${whereClause}
+    `).get(...params) as any).count as number;
 
-    const customers = db.prepare(query).all(...params);
-    return res.json({ data: customers });
+    const query = `
+      SELECT c.*, p.serial_number
+      FROM customers c
+      LEFT JOIN passes p ON p.customer_id = c.id
+      ${whereClause}
+      ORDER BY c.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const customers = db.prepare(query).all(...params, limit, offset);
+    return res.json({
+      data: customers,
+      pagination: {
+        total,
+        limit,
+        offset,
+        has_more: offset + customers.length < total,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'Erreur serveur' });
@@ -47,6 +89,9 @@ router.get('/', (req: Request, res: Response) => {
 // POST /api/customers
 router.post('/', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const {
       restaurant_id,
@@ -58,8 +103,21 @@ router.post('/', (req: Request, res: Response) => {
       marketing_consent,
     } = req.body;
 
-    if (!restaurant_id || !first_name || !last_name || !email) {
+    const safeFirstName = String(first_name || '').trim();
+    const safeLastName = String(last_name || '').trim();
+    const safeEmail = normalizeEmail(String(email || ''));
+    const safePhone = phone ? String(phone).trim() : null;
+
+    if (!restaurant_id || !safeFirstName || !safeLastName || !safeEmail) {
       return res.status(400).json({ error: 'Champs requis: restaurant_id, first_name, last_name, email' });
+    }
+
+    if (String(restaurant_id) !== scopeRestaurantId) {
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+    }
+
+    if (!EMAIL_REGEX.test(safeEmail)) {
+      return res.status(400).json({ error: 'Format email invalide' });
     }
 
     if (!gdpr_consent) {
@@ -69,42 +127,44 @@ router.post('/', (req: Request, res: Response) => {
     // Check email uniqueness within restaurant
     const existing = db.prepare(
       'SELECT id FROM customers WHERE email = ? AND restaurant_id = ?'
-    ).get(email, restaurant_id);
+    ).get(safeEmail, restaurant_id);
     if (existing) {
       return res.status(409).json({ error: 'Un client avec cet email existe déjà' });
     }
 
     const id = uuidv4();
     const now = new Date().toISOString();
-
-    db.prepare(`
-      INSERT INTO customers (id, restaurant_id, first_name, last_name, email, phone, gdpr_consent, marketing_consent, gdpr_consent_at, marketing_consent_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      restaurant_id,
-      first_name,
-      last_name,
-      email,
-      phone || null,
-      gdpr_consent ? 1 : 0,
-      marketing_consent ? 1 : 0,
-      gdpr_consent ? now : null,
-      marketing_consent ? now : null
-    );
-
-    // Create pass for customer
     const passId = uuidv4();
-    db.prepare(`
-      INSERT INTO passes (id, customer_id, serial_number, auth_token)
-      VALUES (?, ?, ?, ?)
-    `).run(passId, id, uuidv4(), uuidv4());
 
-    // Log GDPR consent
-    db.prepare(`
-      INSERT INTO gdpr_log (id, customer_id, action, performed_by)
-      VALUES (?, ?, 'consent_given', 'customer')
-    `).run(uuidv4(), id);
+    const createCustomerTx = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO customers (id, restaurant_id, first_name, last_name, email, phone, gdpr_consent, marketing_consent, gdpr_consent_at, marketing_consent_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        restaurant_id,
+        safeFirstName,
+        safeLastName,
+        safeEmail,
+        safePhone,
+        gdpr_consent ? 1 : 0,
+        marketing_consent ? 1 : 0,
+        gdpr_consent ? now : null,
+        marketing_consent ? now : null
+      );
+
+      db.prepare(`
+        INSERT INTO passes (id, customer_id, serial_number, auth_token)
+        VALUES (?, ?, ?, ?)
+      `).run(passId, id, uuidv4(), uuidv4());
+
+      db.prepare(`
+        INSERT INTO gdpr_log (id, customer_id, action, performed_by)
+        VALUES (?, ?, 'consent_given', 'customer')
+      `).run(uuidv4(), id);
+    });
+
+    createCustomerTx();
 
     const customer = db.prepare(`
       SELECT c.*, p.serial_number FROM customers c
@@ -119,16 +179,73 @@ router.post('/', (req: Request, res: Response) => {
   }
 });
 
+// POST /api/customers/import — Import CSV en masse
+router.post('/import', (req: Request, res: Response) => {
+  const scopeRestaurantId = getRestaurantScopeId(req, res);
+  if (!scopeRestaurantId) return;
+
+  const { restaurant_id, rows } = req.body;
+
+  if (!restaurant_id || !Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: 'restaurant_id et rows[] requis' });
+  }
+
+  if (String(restaurant_id) !== scopeRestaurantId) {
+    return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+  }
+
+  const db = getDb();
+  const restaurant = db.prepare('SELECT id FROM restaurants WHERE id = ?').get(restaurant_id);
+  if (!restaurant) return res.status(404).json({ error: 'Restaurant non trouvé' });
+
+  const results = { created: 0, duplicates: 0, errors: [] as string[] };
+  const now = new Date().toISOString();
+
+  const insertCustomer = db.prepare(`
+    INSERT INTO customers (id, restaurant_id, first_name, last_name, email, phone, gdpr_consent, marketing_consent, gdpr_consent_at)
+    VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?)
+  `);
+  const insertPass = db.prepare('INSERT INTO passes (id, customer_id, serial_number, auth_token) VALUES (?, ?, ?, ?)');
+  const insertGdpr = db.prepare('INSERT INTO gdpr_log (id, customer_id, action, performed_by) VALUES (?, ?, ?, ?)');
+
+  const runImport = db.transaction((rows: any[]) => {
+    for (const row of rows) {
+      const { first_name, last_name, email, phone } = row;
+      if (!first_name?.trim() || !last_name?.trim() || !email?.trim()) {
+        results.errors.push(`Ligne ignorée — données manquantes: ${JSON.stringify(row)}`);
+        continue;
+      }
+      const dup = db.prepare('SELECT id FROM customers WHERE email = ? AND restaurant_id = ?').get(email.trim(), restaurant_id);
+      if (dup) { results.duplicates++; continue; }
+      const id = uuidv4();
+      insertCustomer.run(id, restaurant_id, first_name.trim(), last_name.trim(), email.trim(), phone?.trim() || null, now);
+      insertPass.run(uuidv4(), id, uuidv4(), uuidv4());
+      insertGdpr.run(uuidv4(), id, 'consent_given', 'csv_import');
+      results.created++;
+    }
+  });
+
+  try {
+    runImport(rows);
+    return res.json({ data: results });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/customers/:id
 router.get('/:id', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const customer = db.prepare(`
-      SELECT c.*, p.serial_number, p.auth_token
+      SELECT c.*, p.serial_number
       FROM customers c
       LEFT JOIN passes p ON p.customer_id = c.id
-      WHERE c.id = ?
-    `).get(req.params.id);
+      WHERE c.id = ? AND c.restaurant_id = ?
+    `).get(req.params.id, scopeRestaurantId);
 
     if (!customer) {
       return res.status(404).json({ error: 'Client non trouvé' });
@@ -143,19 +260,43 @@ router.get('/:id', (req: Request, res: Response) => {
 // PUT /api/customers/:id
 router.put('/:id', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { first_name, last_name, email, phone, marketing_consent } = req.body;
 
-    const existing = db.prepare('SELECT id FROM customers WHERE id = ?').get(req.params.id);
+    const existing = db.prepare('SELECT * FROM customers WHERE id = ? AND restaurant_id = ?').get(req.params.id, scopeRestaurantId) as any;
     if (!existing) {
       return res.status(404).json({ error: 'Client non trouvé' });
+    }
+
+    const safeFirstName = first_name !== undefined ? String(first_name).trim() : existing.first_name;
+    const safeLastName = last_name !== undefined ? String(last_name).trim() : existing.last_name;
+    const safeEmail = email !== undefined ? normalizeEmail(String(email || '')) : existing.email;
+    const safePhone = phone !== undefined ? (String(phone).trim() || null) : existing.phone;
+    const safeMarketingConsent = marketing_consent !== undefined ? (marketing_consent ? 1 : 0) : existing.marketing_consent;
+
+    if (!safeFirstName || !safeLastName || !safeEmail) {
+      return res.status(400).json({ error: 'first_name, last_name et email sont requis' });
+    }
+
+    if (!EMAIL_REGEX.test(safeEmail)) {
+      return res.status(400).json({ error: 'Format email invalide' });
+    }
+
+    const emailConflict = db.prepare(
+      'SELECT id FROM customers WHERE email = ? AND restaurant_id = ? AND id != ?'
+    ).get(safeEmail, existing.restaurant_id, req.params.id);
+    if (emailConflict) {
+      return res.status(409).json({ error: 'Un client avec cet email existe déjà' });
     }
 
     db.prepare(`
       UPDATE customers
       SET first_name = ?, last_name = ?, email = ?, phone = ?, marketing_consent = ?
       WHERE id = ?
-    `).run(first_name, last_name, email, phone || null, marketing_consent ? 1 : 0, req.params.id);
+    `).run(safeFirstName, safeLastName, safeEmail, safePhone, safeMarketingConsent, req.params.id);
 
     // Log data update
     db.prepare(`
@@ -178,9 +319,12 @@ router.put('/:id', (req: Request, res: Response) => {
 // DELETE /api/customers/:id — GDPR erasure
 router.delete('/:id', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
 
-    const customer = db.prepare('SELECT id, email FROM customers WHERE id = ?').get(req.params.id) as { id: string; email: string } | undefined;
+    const customer = db.prepare('SELECT id, email FROM customers WHERE id = ? AND restaurant_id = ?').get(req.params.id, scopeRestaurantId) as { id: string; email: string } | undefined;
     if (!customer) {
       return res.status(404).json({ error: 'Client non trouvé' });
     }
@@ -205,6 +349,9 @@ router.delete('/:id', (req: Request, res: Response) => {
 // POST /api/customers/:id/stamp
 router.post('/:id/stamp', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { note } = req.body;
 
@@ -212,8 +359,8 @@ router.post('/:id/stamp', (req: Request, res: Response) => {
       SELECT c.*, r.stamp_goal, r.points_per_visit
       FROM customers c
       JOIN restaurants r ON r.id = c.restaurant_id
-      WHERE c.id = ?
-    `).get(req.params.id) as any;
+      WHERE c.id = ? AND c.restaurant_id = ?
+    `).get(req.params.id, scopeRestaurantId) as any;
 
     if (!customer) {
       return res.status(404).json({ error: 'Client non trouvé' });
@@ -272,6 +419,9 @@ router.post('/:id/stamp', (req: Request, res: Response) => {
 // POST /api/customers/:id/points
 router.post('/:id/points', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { points, note } = req.body;
 
@@ -279,7 +429,7 @@ router.post('/:id/points', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Le nombre de points doit être positif' });
     }
 
-    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(req.params.id) as any;
+    const customer = db.prepare('SELECT * FROM customers WHERE id = ? AND restaurant_id = ?').get(req.params.id, scopeRestaurantId) as any;
     if (!customer) {
       return res.status(404).json({ error: 'Client non trouvé' });
     }
@@ -301,13 +451,17 @@ router.post('/:id/points', (req: Request, res: Response) => {
 // GET /api/customers/:id/history
 router.get('/:id/history', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const history = db.prepare(`
-      SELECT * FROM stamps_history
-      WHERE customer_id = ?
+      SELECT sh.* FROM stamps_history sh
+      JOIN customers c ON c.id = sh.customer_id
+      WHERE sh.customer_id = ? AND c.restaurant_id = ?
       ORDER BY created_at DESC
       LIMIT 20
-    `).all(req.params.id);
+    `).all(req.params.id, scopeRestaurantId);
 
     return res.json({ data: history });
   } catch (error) {

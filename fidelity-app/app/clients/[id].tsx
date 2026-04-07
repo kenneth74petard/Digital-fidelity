@@ -4,6 +4,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Modal, Switch,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useCustomersStore } from '../../stores/customersStore';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
@@ -11,10 +12,10 @@ import { StampHistory } from '../../../shared/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const ACTION_ICONS: Record<string, string> = {
-  stamp_added: '🎯',
-  reward_claimed: '🎁',
-  points_added: '⭐',
+const ACTION_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  stamp_added: 'ribbon-outline',
+  reward_claimed: 'gift-outline',
+  points_added: 'star-outline',
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -35,6 +36,7 @@ export default function ClientDetailScreen() {
     deleteCustomer,
     addStamp,
     addPoints,
+    clearSelected,
   } = useCustomersStore();
 
   const [editing, setEditing] = useState(false);
@@ -66,13 +68,14 @@ export default function ClientDetailScreen() {
   }, [customer]);
 
   const stampGoal = restaurant?.stamp_goal || 10;
+  const loyaltyType = restaurant?.loyalty_type || 'stamps';
 
   const handleSave = async () => {
     try {
       setSaving(true);
       await updateCustomer(id!, { first_name: firstName, last_name: lastName, email, phone, marketing_consent: marketingConsent });
       setEditing(false);
-      Alert.alert('✅', 'Informations mises à jour');
+      Alert.alert('Mis à jour', 'Informations mises à jour');
     } catch {
       Alert.alert('Erreur', 'Impossible de mettre à jour');
     } finally {
@@ -84,9 +87,9 @@ export default function ClientDetailScreen() {
     try {
       const result = await addStamp(id!);
       if (result.reward_claimed) {
-        Alert.alert('🎉 Récompense !', result.message);
+        Alert.alert('Récompense !', result.message);
       } else {
-        Alert.alert('✅', result.message);
+        Alert.alert('Tampon ajouté', result.message);
       }
       loadHistory(id!);
     } catch {
@@ -101,7 +104,7 @@ export default function ClientDetailScreen() {
       await addPoints(id!, pts);
       setShowPointsModal(false);
       loadHistory(id!);
-      Alert.alert('✅', `${pts} points ajoutés`);
+      Alert.alert('Points ajoutés', `${pts} points ajoutés`);
     } catch {
       Alert.alert('Erreur', 'Impossible d\'ajouter les points');
     }
@@ -162,29 +165,42 @@ export default function ClientDetailScreen() {
 
       {/* Stats */}
       <View style={styles.statsRow}>
-        <StatBox value={customer.total_visits} label="Visites" icon="🏃" />
-        <StatBox value={customer.stamps} label={`/${stampGoal} tampons`} icon="🎯" />
-        <StatBox value={customer.points} label="Points" icon="⭐" />
-        <StatBox value={customer.discount_pct} label="% réduction" icon="🏷️" />
+        <StatBox value={customer.total_visits} label="Visites" icon="footsteps-outline" />
+        {loyaltyType === 'stamps' && <StatBox value={customer.stamps} label={`/${stampGoal} tampons`} icon="ribbon-outline" />}
+        {loyaltyType === 'points' && <StatBox value={customer.points} label="Points" icon="star-outline" />}
+        <StatBox value={customer.discount_pct} label="% réduction" icon="pricetag-outline" />
       </View>
 
-      {/* Stamp progress */}
-      <View style={styles.stampProgress}>
-        <Text style={styles.sectionTitle}>Progression des tampons</Text>
-        <View style={styles.stampDots}>
-          {Array.from({ length: stampGoal }).map((_, i) => (
-            <View
-              key={i}
-              style={[styles.stampDot, i < customer.stamps && styles.stampDotFilled]}
-            />
-          ))}
-        </View>
-        {hasReward && (
-          <View style={styles.rewardBanner}>
-            <Text style={styles.rewardBannerText}>🎁 Récompense disponible !</Text>
+      {/* Stamp progress (mode tampons uniquement) */}
+      {loyaltyType === 'stamps' && (
+        <View style={styles.stampProgress}>
+          <Text style={styles.sectionTitle}>Progression des tampons</Text>
+          <View style={styles.stampDots}>
+            {Array.from({ length: stampGoal }).map((_, i) => (
+              <View key={i} style={[styles.stampDot, i < customer.stamps && styles.stampDotFilled]} />
+            ))}
           </View>
-        )}
-      </View>
+          {hasReward && (
+            <View style={styles.rewardBanner}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                <Ionicons name="gift-outline" size={16} color={Colors.success} />
+                <Text style={styles.rewardBannerText}>Récompense disponible !</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Points summary (mode points uniquement) */}
+      {loyaltyType === 'points' && (
+        <View style={styles.stampProgress}>
+          <Text style={styles.sectionTitle}>Solde de points</Text>
+          <Text style={{ fontSize: 40, fontWeight: '800', color: Colors.gold, textAlign: 'center', marginVertical: Spacing.md }}>
+            {customer.points}
+          </Text>
+          <Text style={{ fontSize: 13, color: Colors.textSecondary, textAlign: 'center' }}>points cumulés sur {customer.total_visits} visite{customer.total_visits !== 1 ? 's' : ''}</Text>
+        </View>
+      )}
 
       {/* Contact info */}
       <View style={styles.section}>
@@ -208,10 +224,10 @@ export default function ClientDetailScreen() {
           </View>
         ) : (
           <View>
-            <InfoRow icon="📧" label="Email" value={customer.email} />
-            <InfoRow icon="📱" label="Téléphone" value={customer.phone || 'Non renseigné'} />
-            <InfoRow icon="✅" label="Consentement RGPD" value={customer.gdpr_consent ? 'Oui' : 'Non'} />
-            <InfoRow icon="📨" label="Consentement marketing" value={customer.marketing_consent ? 'Oui' : 'Non'} />
+            <InfoRow icon="mail-outline" label="Email" value={customer.email} />
+            <InfoRow icon="phone-portrait-outline" label="Téléphone" value={customer.phone || 'Non renseigné'} />
+            <InfoRow icon="shield-checkmark-outline" label="Consentement RGPD" value={customer.gdpr_consent ? 'Oui' : 'Non'} />
+            <InfoRow icon="notifications-outline" label="Consentement marketing" value={customer.marketing_consent ? 'Oui' : 'Non'} />
           </View>
         )}
       </View>
@@ -230,14 +246,27 @@ export default function ClientDetailScreen() {
 
       {/* Actions */}
       <View style={styles.actionsSection}>
-        <TouchableOpacity style={styles.primaryAction} onPress={handleAddStamp}>
-          <Text style={styles.primaryActionText}>🎯 Ajouter un tampon</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryAction} onPress={() => setShowPointsModal(true)}>
-          <Text style={styles.secondaryActionText}>⭐ Ajouter des points</Text>
-        </TouchableOpacity>
+        {loyaltyType === 'stamps' && (
+          <TouchableOpacity style={styles.primaryAction} onPress={handleAddStamp}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="ribbon" size={18} color="#000" />
+              <Text style={styles.primaryActionText}>Ajouter un tampon</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {loyaltyType === 'points' && (
+          <TouchableOpacity style={styles.primaryAction} onPress={() => setShowPointsModal(true)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="star" size={18} color="#000" />
+              <Text style={styles.primaryActionText}>Ajouter des points</Text>
+            </View>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.dangerAction} onPress={handleDelete}>
-          <Text style={styles.dangerActionText}>🗑 Supprimer le client</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="trash-outline" size={18} color={Colors.error} />
+            <Text style={styles.dangerActionText}>Supprimer le client</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -269,20 +298,20 @@ export default function ClientDetailScreen() {
   );
 }
 
-function StatBox({ value, label, icon }: { value: number; label: string; icon: string }) {
+function StatBox({ value, label, icon }: { value: number; label: string; icon: keyof typeof Ionicons.glyphMap }) {
   return (
     <View style={statStyles.box}>
-      <Text style={statStyles.icon}>{icon}</Text>
+      <Ionicons name={icon} size={20} color={Colors.gold} style={{ marginBottom: 4 }} />
       <Text style={statStyles.value}>{value}</Text>
       <Text style={statStyles.label}>{label}</Text>
     </View>
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+function InfoRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
   return (
     <View style={infoStyles.row}>
-      <Text style={infoStyles.icon}>{icon}</Text>
+      <Ionicons name={icon} size={20} color={Colors.textSecondary} style={{ width: 28, textAlign: 'center' }} />
       <View style={infoStyles.content}>
         <Text style={infoStyles.label}>{label}</Text>
         <Text style={infoStyles.value}>{value}</Text>
@@ -292,9 +321,10 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
 }
 
 function HistoryItem({ item }: { item: StampHistory }) {
+  const iconName: keyof typeof Ionicons.glyphMap = ACTION_ICONS[item.action] || 'pin-outline';
   return (
     <View style={histStyles.item}>
-      <Text style={histStyles.icon}>{ACTION_ICONS[item.action] || '📌'}</Text>
+      <Ionicons name={iconName} size={20} color={Colors.textSecondary} style={{ width: 28, textAlign: 'center', paddingTop: 2 }} />
       <View style={histStyles.info}>
         <Text style={histStyles.action}>{ACTION_LABELS[item.action] || item.action}</Text>
         {item.note && <Text style={histStyles.note}>{item.note}</Text>}
@@ -358,14 +388,12 @@ const styles = StyleSheet.create({
 
 const statStyles = StyleSheet.create({
   box: { flex: 1, backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  icon: { fontSize: 20, marginBottom: 4 },
   value: { fontSize: 20, fontWeight: '800', color: Colors.gold },
   label: { fontSize: 10, color: Colors.textSecondary, textAlign: 'center' },
 });
 
 const infoStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  icon: { fontSize: 20, width: 28, textAlign: 'center' },
   content: { flex: 1 },
   label: { fontSize: 11, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 2 },
   value: { fontSize: 15, color: Colors.textPrimary },
@@ -373,7 +401,6 @@ const infoStyles = StyleSheet.create({
 
 const histStyles = StyleSheet.create({
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  icon: { fontSize: 20, width: 28, textAlign: 'center', paddingTop: 2 },
   info: { flex: 1 },
   action: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, marginBottom: 2 },
   note: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },

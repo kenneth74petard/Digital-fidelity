@@ -28,6 +28,7 @@ function initSchema(db: Database.Database): void {
       color_primary TEXT NOT NULL DEFAULT '#c9a84c',
       color_secondary TEXT NOT NULL DEFAULT '#1a1a24',
       logo_emoji TEXT NOT NULL DEFAULT '🍽️',
+      loyalty_type TEXT NOT NULL DEFAULT 'stamps',
       stamp_goal INTEGER NOT NULL DEFAULT 10,
       points_per_visit INTEGER NOT NULL DEFAULT 100,
       vapid_public_key TEXT,
@@ -60,7 +61,7 @@ function initSchema(db: Database.Database): void {
       customer_id TEXT NOT NULL,
       serial_number TEXT NOT NULL UNIQUE,
       auth_token TEXT NOT NULL,
-      pass_type_id TEXT NOT NULL DEFAULT 'pass.com.simulation.fidelite',
+      pass_type_id TEXT NOT NULL DEFAULT 'pass.com.votrerestaurant.fidelite',
       last_updated DATETIME NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
     );
@@ -97,6 +98,10 @@ function initSchema(db: Database.Database): void {
       created_at DATETIME NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Migration: add loyalty_type if missing (existing databases)
+  `);
+  try { db.exec(`ALTER TABLE restaurants ADD COLUMN loyalty_type TEXT NOT NULL DEFAULT 'stamps'`); } catch {}
+  db.exec(`
     -- Indexes for frequent queries
     CREATE INDEX IF NOT EXISTS idx_customers_restaurant_id ON customers(restaurant_id);
     CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);

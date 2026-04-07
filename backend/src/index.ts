@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,102 +10,62 @@ import restaurantRouter from './routes/restaurant';
 import customersRouter from './routes/customers';
 import passesRouter from './routes/passes';
 import notificationsRouter from './routes/notifications';
+import registerRouter from './routes/register';
+import statsRouter from './routes/stats';
 import { sendToAllCustomers } from './services/pushNotifications';
+import { requireApiToken } from './middleware/auth';
+import { apiLimiter, corsMiddleware, securityHeaders } from './middleware/security';
 
 dotenv.config();
+
+function hasDefaultScopedToken(rawScoped: string): boolean {
+  if (!rawScoped.trim()) return false;
+  return rawScoped
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .some((entry) => {
+      const sep = entry.indexOf(':');
+      if (sep <= 0 || sep >= entry.length - 1) return false;
+      const token = entry.slice(sep + 1).trim();
+      return token === 'change-me';
+    });
+}
+
+function validateSecurityConfig(): void {
+  const globalToken = String(process.env.ADMIN_API_TOKEN || '').trim();
+  const scopedTokens = String(process.env.ADMIN_API_TOKENS || '');
+  const allowInsecure = String(process.env.ALLOW_INSECURE_DEFAULT_TOKEN || '').trim() === 'true';
+
+  if (!allowInsecure && (globalToken === 'change-me' || hasDefaultScopedToken(scopedTokens))) {
+    console.error('[SECURITY] Refus de demarrage: token API par defaut detecte (change-me).');
+    console.error('[SECURITY] Definissez ADMIN_API_TOKEN/ADMIN_API_TOKENS ou ALLOW_INSECURE_DEFAULT_TOKEN=true pour bypass local.');
+    process.exit(1);
+  }
+}
+
+validateSecurityConfig();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(securityHeaders);
+app.use(corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', apiLimiter);
+app.use('/api', requireApiToken);
 
-// Routes
+// Routes API
 app.use('/api/restaurant', restaurantRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/passes', passesRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/stats', statsRouter);
 
-// GET /api/stats/:restaurantId
-app.get('/api/stats/:restaurantId', (req, res) => {
-  try {
-    const db = getDb();
-    const { restaurantId } = req.params;
-
-    const total_customers = (db.prepare(
-      'SELECT COUNT(*) as count FROM customers WHERE restaurant_id = ?'
-    ).get(restaurantId) as any).count;
-
-    const active_customers = (db.prepare(`
-      SELECT COUNT(*) as count FROM customers
-      WHERE restaurant_id = ? AND created_at >= datetime('now', '-30 days')
-    `).get(restaurantId) as any).count;
-
-    const stamps_given_today = (db.prepare(`
-      SELECT COUNT(*) as count FROM stamps_history sh
-      JOIN customers c ON c.id = sh.customer_id
-      WHERE c.restaurant_id = ? AND sh.action = 'stamp_added'
-      AND sh.created_at >= datetime('now', 'start of day')
-    `).get(restaurantId) as any).count;
-
-    const stamps_given_week = (db.prepare(`
-      SELECT COUNT(*) as count FROM stamps_history sh
-      JOIN customers c ON c.id = sh.customer_id
-      WHERE c.restaurant_id = ? AND sh.action = 'stamp_added'
-      AND sh.created_at >= datetime('now', '-7 days')
-    `).get(restaurantId) as any).count;
-
-    const notifications_sent_total = (db.prepare(`
-      SELECT COUNT(*) as count FROM notifications
-      WHERE restaurant_id = ? AND status = 'sent'
-    `).get(restaurantId) as any).count;
-
-    // New customers per day (last 7 days)
-    const new_customers_per_day = db.prepare(`
-      SELECT date(created_at) as date, COUNT(*) as count
-      FROM customers
-      WHERE restaurant_id = ?
-      AND created_at >= datetime('now', '-7 days')
-      GROUP BY date(created_at)
-      ORDER BY date ASC
-    `).all(restaurantId) as Array<{ date: string; count: number }>;
-
-    // Fill missing days with 0
-    const filledDays: Array<{ date: string; count: number }> = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const found = new_customers_per_day.find((r) => r.date === dateStr);
-      filledDays.push({ date: dateStr, count: found ? found.count : 0 });
-    }
-
-    const top_customers = db.prepare(`
-      SELECT id, first_name, last_name, total_visits, points
-      FROM customers
-      WHERE restaurant_id = ?
-      ORDER BY total_visits DESC
-      LIMIT 5
-    `).all(restaurantId);
-
-    res.json({
-      data: {
-        total_customers,
-        active_customers,
-        stamps_given_today,
-        stamps_given_week,
-        notifications_sent_total,
-        new_customers_per_day: filledDays,
-        top_customers,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
+// Page d'inscription publique (avant le fallback SPA)
+app.use('/register', registerRouter);
 
 // Background cron: check scheduled notifications every minute
 cron.schedule('* * * * *', async () => {
@@ -152,7 +111,8 @@ cron.schedule('* * * * *', async () => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    simulation_mode: process.env.SIMULATION_MODE === 'true',
+    wallet_live_mode: process.env.WALLET_LIVE_MODE === 'true',
+    push_live_mode: process.env.PUSH_LIVE_MODE === 'true',
     timestamp: new Date().toISOString(),
   });
 });
@@ -171,10 +131,11 @@ if (fs.existsSync(publicDir)) {
 }
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Fidelity App running on port ${PORT}`);
-  console.log(`📊 Mode: ${process.env.SIMULATION_MODE === 'true' ? '🔶 SIMULATION' : '✅ PRODUCTION'}`);
+  console.log(`\n🚀 Fidelity Web running on port ${PORT}`);
+  console.log(`📊 Wallet mode: ${process.env.WALLET_LIVE_MODE === 'true' ? '✅ LIVE' : '⚠️ SETUP REQUIRED'}`);
+  console.log(`📣 Push mode: ${process.env.PUSH_LIVE_MODE === 'true' ? '✅ LIVE' : '⚠️ DRY RUN'}`);
   console.log(`🗄️  Database: ${process.env.DB_PATH || './fidelity.db'}`);
-  console.log(`\n📱 Ouvrez l'app: http://localhost:${PORT}`);
+  console.log(`\n🌐 Ouvrez la web app: http://localhost:${PORT}`);
 });
 
 export default app;

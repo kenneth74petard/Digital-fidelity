@@ -22,11 +22,10 @@ router.get('/:customerId/download', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Client ou carte non trouvée' });
     }
 
-    const simulationMode = process.env.SIMULATION_MODE === 'true';
+    const walletLiveMode = process.env.WALLET_LIVE_MODE === 'true';
 
-    if (simulationMode) {
-      // TODO [PRODUCTION]: Remove simulation header and use real signing
-      console.log(`[SIMULATION] Generating mock .pkpass for customer ${req.params.customerId}`);
+    if (!walletLiveMode) {
+      console.log(`[WALLET_SETUP_REQUIRED] Generating unsigned .pkpass for customer ${req.params.customerId}`);
     }
 
     const passBuffer = await generatePassFile({
@@ -46,7 +45,7 @@ router.get('/:customerId/download', async (req: Request, res: Response) => {
       'Content-Type': 'application/vnd.apple.pkpass',
       'Content-Disposition': `attachment; filename="fidelite-${row.first_name.toLowerCase()}.pkpass"`,
       'Content-Length': passBuffer.length,
-      'X-Simulation-Mode': simulationMode ? 'true' : 'false',
+      'X-Wallet-Live-Mode': walletLiveMode ? 'true' : 'false',
     });
 
     return res.send(passBuffer);
@@ -78,10 +77,10 @@ router.get('/:customerId/qr', async (req: Request, res: Response) => {
 router.post('/register', (req: Request, res: Response) => {
   // TODO [PRODUCTION]: Store device token and associate with pass for push updates
   // This endpoint is called by iOS Wallet when a pass is added
-  console.log('[SIMULATION] Apple Wallet registration received (not implemented in simulation mode)');
+  console.log('[WALLET] Apple Wallet registration received (endpoint pending implementation)');
   console.log('  Device:', req.body.deviceLibraryIdentifier);
   console.log('  Pass:', req.body.passTypeIdentifier, req.body.serialNumber);
-  return res.status(200).json({ message: 'Registration acknowledged (simulation mode)' });
+  return res.status(200).json({ message: 'Registration acknowledged' });
 });
 
 export default router;

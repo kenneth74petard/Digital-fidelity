@@ -1,5 +1,7 @@
 // Shared TypeScript types for fidelity-app and backend
 
+export type LoyaltyType = 'stamps' | 'points';
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -7,6 +9,7 @@ export interface Restaurant {
   color_primary: string;
   color_secondary: string;
   logo_emoji: string;
+  loyalty_type: LoyaltyType;
   stamp_goal: number;
   points_per_visit: number;
   vapid_public_key?: string;

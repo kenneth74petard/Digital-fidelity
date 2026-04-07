@@ -5,14 +5,30 @@ import { sendToAllCustomers } from '../services/pushNotifications';
 
 const router = Router();
 
+function getRestaurantScopeId(req: Request, res: Response): string | null {
+  const scopeId = String(req.restaurantScopeId || '').trim();
+  if (!scopeId) {
+    res.status(403).json({ error: 'Scope restaurant introuvable pour cette requete' });
+    return null;
+  }
+  return scopeId;
+}
+
 // POST /api/notifications/send — Immediate push to all marketing-consented customers
 router.post('/send', async (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { restaurant_id, title, body, type } = req.body;
 
     if (!restaurant_id || !title || !body) {
       return res.status(400).json({ error: 'Champs requis: restaurant_id, title, body' });
+    }
+
+    if (String(restaurant_id) !== scopeRestaurantId) {
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     if (title.length > 50) {
@@ -37,19 +53,34 @@ router.post('/send', async (req: Request, res: Response) => {
     const notifId = uuidv4();
     const now = new Date().toISOString();
 
-    // Create notification record
+    // Create notification record as draft until send result is known
     db.prepare(`
       INSERT INTO notifications (id, restaurant_id, title, body, type, sent_at, recipients_count, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'sent')
-    `).run(notifId, restaurant_id, title, body, type || 'general', now, recipientsCount);
+      VALUES (?, ?, ?, ?, ?, NULL, ?, 'draft')
+    `).run(notifId, restaurant_id, title, body, type || 'general', recipientsCount);
 
-    // Send notifications (simulation: just logs)
-    const sentCount = await sendToAllCustomers(restaurant_id, title, body, restaurant.name);
+    let sentCount = 0;
+    try {
+      // Send notifications (or dry-run logging when push live mode is disabled)
+      sentCount = await sendToAllCustomers(restaurant_id, title, body, restaurant.name);
+      db.prepare(`
+        UPDATE notifications
+        SET status = 'sent', sent_at = ?, recipients_count = ?
+        WHERE id = ?
+      `).run(now, sentCount, notifId);
+    } catch (sendError) {
+      db.prepare(`
+        UPDATE notifications
+        SET status = 'failed', sent_at = ?
+        WHERE id = ?
+      `).run(now, notifId);
+      throw sendError;
+    }
 
     return res.json({
       data: { id: notifId, sent_count: sentCount },
       message: `Notification envoyée à ${sentCount} client(s)`,
-      simulation: process.env.SIMULATION_MODE === 'true',
+      push_dry_run: process.env.PUSH_LIVE_MODE !== 'true',
     });
   } catch (error) {
     console.error(error);
@@ -60,6 +91,9 @@ router.post('/send', async (req: Request, res: Response) => {
 // POST /api/notifications/schedule — Schedule future notification
 router.post('/schedule', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
     const { restaurant_id, title, body, type, scheduled_at } = req.body;
 
@@ -67,7 +101,22 @@ router.post('/schedule', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Champs requis: restaurant_id, title, body, scheduled_at' });
     }
 
+    if (String(restaurant_id) !== scopeRestaurantId) {
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+    }
+
+    if (title.length > 50) {
+      return res.status(400).json({ error: 'Le titre ne doit pas depasser 50 caracteres' });
+    }
+
+    if (body.length > 150) {
+      return res.status(400).json({ error: 'Le message ne doit pas depasser 150 caracteres' });
+    }
+
     const scheduledDate = new Date(scheduled_at);
+    if (Number.isNaN(scheduledDate.getTime())) {
+      return res.status(400).json({ error: 'Date de planification invalide' });
+    }
     const minDate = new Date(Date.now() + 60 * 60 * 1000); // +1 hour minimum
 
     if (scheduledDate < minDate) {
@@ -99,6 +148,13 @@ router.post('/schedule', (req: Request, res: Response) => {
 // GET /api/notifications/:restaurantId — List all notifications
 router.get('/:restaurantId', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
+    if (req.params.restaurantId !== scopeRestaurantId) {
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+    }
+
     const db = getDb();
     const notifications = db.prepare(`
       SELECT * FROM notifications
@@ -115,8 +171,11 @@ router.get('/:restaurantId', (req: Request, res: Response) => {
 // DELETE /api/notifications/:id — Cancel scheduled notification
 router.delete('/:id', (req: Request, res: Response) => {
   try {
+    const scopeRestaurantId = getRestaurantScopeId(req, res);
+    if (!scopeRestaurantId) return;
+
     const db = getDb();
-    const notification = db.prepare('SELECT * FROM notifications WHERE id = ?').get(req.params.id) as any;
+    const notification = db.prepare('SELECT * FROM notifications WHERE id = ? AND restaurant_id = ?').get(req.params.id, scopeRestaurantId) as any;
 
     if (!notification) {
       return res.status(404).json({ error: 'Notification non trouvée' });

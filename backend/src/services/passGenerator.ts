@@ -19,7 +19,7 @@ export interface PassData {
 }
 
 /**
- * Generates a simulated .pkpass file (ZIP structure)
+ * Generates an unsigned .pkpass file (ZIP structure)
  * TODO [PRODUCTION]: Replace with real passkit-generator + Apple Developer certificates
  */
 export async function generatePassFile(data: PassData): Promise<Buffer> {
@@ -58,9 +58,9 @@ export async function generatePassFile(data: PassData): Promise<Buffer> {
   };
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
 
-  // TODO [PRODUCTION]: Replace mock signature with real PKCS#7 signature from Apple cert
+  // TODO [PRODUCTION]: Replace placeholder signature with real PKCS#7 signature from Apple cert
   const mockSignature = Buffer.from(
-    `SIMULATION_SIGNATURE_NOT_VALID\nThis pass requires a real Apple Developer certificate.\nSerial: ${data.serialNumber}\nTimestamp: ${new Date().toISOString()}`
+    `UNSIGNED_PASS_NOT_VALID\nThis pass requires a real Apple Developer certificate.\nSerial: ${data.serialNumber}\nTimestamp: ${new Date().toISOString()}`
   );
   zip.file('signature', mockSignature);
 
@@ -80,9 +80,9 @@ function generatePassJson(data: PassData) {
 
   return {
     formatVersion: 1,
-    passTypeIdentifier: 'pass.com.simulation.fidelite',
+    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || 'pass.com.votrerestaurant.fidelite',
     serialNumber: data.serialNumber,
-    teamIdentifier: 'SIMULATION',
+    teamIdentifier: process.env.APPLE_TEAM_ID || 'TEAM_ID_REQUIRED',
     organizationName: data.restaurantName,
     description: `Carte de fidélité ${data.restaurantName}`,
     logoText: data.restaurantName,
@@ -122,16 +122,16 @@ function generatePassJson(data: PassData) {
       ],
       auxiliaryFields: [
         {
-          key: 'simulation_notice',
-          label: '⚠️ MODE SIMULATION',
-          value: 'Carte non valide sans certificat Apple Developer',
+          key: 'wallet_notice',
+          label: 'Configuration requise',
+          value: 'Certificats Apple Developer requis pour installation Wallet',
         },
       ],
       backFields: [
         {
           key: 'info',
           label: 'Informations',
-          value: `Carte de fidélité ${data.restaurantName}\nCumul: ${data.stamps}/${data.stampGoal} tampons\nPoints: ${data.points}\n\nCette carte est en mode simulation.\nTODO [PRODUCTION]: Configurer les certificats Apple Developer.`,
+          value: `Carte de fidélité ${data.restaurantName}\nCumul: ${data.stamps}/${data.stampGoal} tampons\nPoints: ${data.points}\n\nConfiguration requise: certificats Apple Developer + signature Wallet.`,
         },
       ],
     },
@@ -160,7 +160,7 @@ function sha1(data: string | Buffer): string {
  * Generate a minimal 8x8 colored PNG placeholder
  */
 function generateColoredPng(hexColor: string): Buffer {
-  // Minimal valid PNG (1x1 pixel) - for simulation purposes only
+  // Minimal valid PNG (1x1 pixel) placeholder
   // TODO [PRODUCTION]: Replace with actual restaurant logo images
   const pngHeader = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 

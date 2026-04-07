@@ -5,12 +5,39 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
+import { customersApi } from '../../lib/api';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { Customer } from '../../../shared/types';
 
 type FilterType = 'all' | 'active' | 'reward';
+
+function getRegisterUrl(restaurantId: string): string {
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.origin}/register/${restaurantId}`;
+  }
+  return `http://localhost:3000/register/${restaurantId}`;
+}
+
+function parseCsv(raw: string): { first_name: string; last_name: string; email: string; phone?: string }[] {
+  const lines = raw.trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/["\s]/g, ''));
+  return lines.slice(1).map((line) => {
+    const values = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
+    const row: any = {};
+    headers.forEach((h, i) => { row[h] = values[i] || ''; });
+    return {
+      first_name: row['prenom'] || row['firstname'] || row['first_name'] || '',
+      last_name: row['nom'] || row['lastname'] || row['last_name'] || '',
+      email: row['email'] || row['mail'] || '',
+      phone: row['telephone'] || row['phone'] || row['tel'] || undefined,
+    };
+  }).filter((r) => r.first_name && r.last_name && r.email);
+}
 
 export default function ClientsScreen() {
   const { restaurant } = useRestaurantStore();
@@ -22,8 +49,11 @@ export default function ClientsScreen() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [stampConfirm, setStampConfirm] = useState<Customer | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const stampGoal = restaurant?.stamp_goal || 10;
+  const loyaltyType = restaurant?.loyalty_type || 'stamps';
 
   const loadData = useCallback(async () => {
     if (!restaurant) return;
@@ -40,9 +70,9 @@ export default function ClientsScreen() {
     try {
       const result = await addStamp(customer.id);
       if (result.reward_claimed) {
-        Alert.alert('🎉 Récompense !', result.message);
+        Alert.alert('Récompense !', result.message);
       } else {
-        Alert.alert('✅ Tampon ajouté', result.message);
+        Alert.alert('Tampon ajouté', result.message);
       }
     } catch (err) {
       Alert.alert('Erreur', 'Impossible d\'ajouter le tampon');
@@ -56,13 +86,23 @@ export default function ClientsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Clients</Text>
-        <Text style={styles.count}>{customers.length} client{customers.length !== 1 ? 's' : ''}</Text>
+        <View>
+          <Text style={styles.title}>Clients</Text>
+          <Text style={styles.count}>{customers.length} client{customers.length !== 1 ? 's' : ''}</Text>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
+            <Ionicons name="qr-code-outline" size={20} color={Colors.gold} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowImportModal(true)}>
+            <Ionicons name="cloud-upload-outline" size={20} color={Colors.gold} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search" size={16} color={Colors.textSecondary} style={{ marginRight: Spacing.sm }} />
         <TextInput
           style={styles.searchInput}
           value={search}
@@ -99,7 +139,7 @@ export default function ClientsScreen() {
         </View>
       ) : customers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>👥</Text>
+          <Ionicons name="people-outline" size={64} color={Colors.textSecondary} style={{ marginBottom: Spacing.lg }} />
           <Text style={styles.emptyTitle}>Aucun client</Text>
           <Text style={styles.emptySubtitle}>Ajoutez votre premier client en appuyant sur +</Text>
         </View>
@@ -113,7 +153,15 @@ export default function ClientsScreen() {
             <CustomerCard
               customer={item}
               stampGoal={stampGoal}
+              loyaltyType={loyaltyType}
               onStamp={() => setStampConfirm(item)}
+              onAddPoints={async () => {
+                try {
+                  const result = await addStamp(item.id);
+                  Alert.alert('Points ajoutés', result.message);
+                  loadData();
+                } catch { Alert.alert('Erreur', 'Impossible d\'ajouter les points'); }
+              }}
               onView={() => { setSelectedCustomer(item); setShowPreviewModal(true); }}
               onDetail={() => router.push(`/clients/${item.id}` as any)}
             />
@@ -144,6 +192,22 @@ export default function ClientsScreen() {
         />
       )}
 
+      {/* QR code d'inscription */}
+      <QrRegisterModal
+        visible={showQrModal}
+        restaurantId={restaurant?.id || ''}
+        restaurantName={restaurant?.name || ''}
+        onClose={() => setShowQrModal(false)}
+      />
+
+      {/* Import CSV */}
+      <ImportCsvModal
+        visible={showImportModal}
+        restaurantId={restaurant?.id || ''}
+        onClose={() => setShowImportModal(false)}
+        onImported={() => { setShowImportModal(false); loadData(); }}
+      />
+
       {/* Stamp confirmation */}
       {stampConfirm && (
         <Modal transparent animationType="fade">
@@ -158,7 +222,7 @@ export default function ClientsScreen() {
               </Text>
               {stampConfirm.stamps + 1 >= stampGoal && (
                 <View style={styles.rewardAlert}>
-                  <Text style={styles.rewardAlertText}>🎉 Cette visite déclenchera une récompense !</Text>
+                  <Text style={styles.rewardAlertText}>Cette visite déclenchera une récompense !</Text>
                 </View>
               )}
               <View style={styles.confirmButtons}>
@@ -178,11 +242,13 @@ export default function ClientsScreen() {
 }
 
 function CustomerCard({
-  customer, stampGoal, onStamp, onView, onDetail,
+  customer, stampGoal, loyaltyType, onStamp, onAddPoints, onView, onDetail,
 }: {
   customer: Customer;
   stampGoal: number;
+  loyaltyType: 'stamps' | 'points';
   onStamp: () => void;
+  onAddPoints: () => void;
   onView: () => void;
   onDetail: () => void;
 }) {
@@ -193,16 +259,23 @@ function CustomerCard({
   return (
     <TouchableOpacity style={cardStyles.card} onPress={onDetail}>
       <View style={cardStyles.top}>
-        <View style={[cardStyles.avatar, hasReward && cardStyles.avatarGold]}>
+        <View style={[cardStyles.avatar, hasReward && loyaltyType === 'stamps' && cardStyles.avatarGold]}>
           <Text style={cardStyles.initials}>{initials}</Text>
-          {hasReward && <View style={cardStyles.rewardDot} />}
+          {hasReward && loyaltyType === 'stamps' && <View style={cardStyles.rewardDot} />}
         </View>
         <View style={cardStyles.info}>
           <Text style={cardStyles.name}>{customer.first_name} {customer.last_name}</Text>
           <Text style={cardStyles.email}>{customer.email}</Text>
         </View>
         <View style={cardStyles.badges}>
-          <Text style={cardStyles.points}>{customer.points} pts</Text>
+          {loyaltyType === 'points' ? (
+            <View style={cardStyles.pointsBadge}>
+              <Ionicons name="star" size={12} color={Colors.gold} />
+              <Text style={cardStyles.pointsBadgeText}>{customer.points} pts</Text>
+            </View>
+          ) : (
+            <Text style={cardStyles.points}>{customer.stamps}/{stampGoal}</Text>
+          )}
           {customer.discount_pct > 0 && (
             <View style={cardStyles.discountBadge}>
               <Text style={cardStyles.discountText}>-{customer.discount_pct}%</Text>
@@ -211,30 +284,147 @@ function CustomerCard({
         </View>
       </View>
 
-      <View style={cardStyles.stampsRow}>
-        <View style={cardStyles.stampDots}>
-          {Array.from({ length: displayStamps }).map((_, i) => (
-            <View
-              key={i}
-              style={[cardStyles.stampDot, i < customer.stamps && cardStyles.stampDotFilled]}
-            />
-          ))}
+      {loyaltyType === 'stamps' && (
+        <View style={cardStyles.stampsRow}>
+          <View style={cardStyles.stampDots}>
+            {Array.from({ length: displayStamps }).map((_, i) => (
+              <View key={i} style={[cardStyles.stampDot, i < customer.stamps && cardStyles.stampDotFilled]} />
+            ))}
+          </View>
+          <Text style={cardStyles.stampsCount}>{customer.stamps}/{stampGoal}</Text>
         </View>
-        <Text style={cardStyles.stampsCount}>{customer.stamps}/{stampGoal}</Text>
-      </View>
+      )}
+
+      {loyaltyType === 'points' && (
+        <View style={cardStyles.pointsBar}>
+          <Ionicons name="star-outline" size={13} color={Colors.textSecondary} />
+          <Text style={cardStyles.pointsBarText}>{customer.total_visits} visite{customer.total_visits !== 1 ? 's' : ''} · {customer.points} points cumulés</Text>
+        </View>
+      )}
 
       <View style={cardStyles.actions}>
-        <TouchableOpacity style={cardStyles.actionBtn} onPress={onStamp}>
-          <Text style={cardStyles.actionBtnText}>+ Tampon</Text>
-        </TouchableOpacity>
+        {loyaltyType === 'stamps' ? (
+          <TouchableOpacity style={cardStyles.actionBtn} onPress={onStamp}>
+            <Text style={cardStyles.actionBtnText}>+ Tampon</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={cardStyles.actionBtn} onPress={onAddPoints}>
+            <Text style={cardStyles.actionBtnText}>+ Points</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={[cardStyles.actionBtn, cardStyles.actionBtnOutline]} onPress={onView}>
-          <Text style={cardStyles.actionBtnOutlineText}>👁 Carte</Text>
+          <Ionicons name="eye-outline" size={14} color={Colors.textSecondary} />
+          <Text style={cardStyles.actionBtnOutlineText}> Carte</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[cardStyles.actionBtn, cardStyles.actionBtnOutline]} onPress={onDetail}>
-          <Text style={cardStyles.actionBtnOutlineText}>⋯ Plus</Text>
+          <Ionicons name="ellipsis-horizontal" size={14} color={Colors.textSecondary} />
+          <Text style={cardStyles.actionBtnOutlineText}> Plus</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
+  );
+}
+
+function QrRegisterModal({ visible, restaurantId, restaurantName, onClose }: { visible: boolean; restaurantId: string; restaurantName: string; onClose: () => void }) {
+  const url = getRegisterUrl(restaurantId);
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={qrStyles.overlay}>
+        <View style={qrStyles.sheet}>
+          <View style={qrStyles.handle} />
+          <Text style={qrStyles.title}>QR d'inscription</Text>
+          <Text style={qrStyles.sub}>Les clients scannent ce QR pour s'inscrire eux-mêmes</Text>
+          <View style={qrStyles.qrBox}>
+            <QRCode value={url} size={200} backgroundColor="#fff" color="#000" />
+          </View>
+          <View style={qrStyles.urlBox}>
+            <Text style={qrStyles.urlText} numberOfLines={2} selectable>{url}</Text>
+          </View>
+          <Text style={qrStyles.hint}>Affichez ce QR à la caisse ou imprimez-le</Text>
+          <TouchableOpacity style={qrStyles.closeBtn} onPress={onClose}>
+            <Text style={qrStyles.closeBtnText}>Fermer</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ImportCsvModal({ visible, restaurantId, onClose, onImported }: { visible: boolean; restaurantId: string; onClose: () => void; onImported: () => void }) {
+  const [csv, setCsv] = useState('');
+  const [importing, setImporting] = useState(false);
+  const preview = parseCsv(csv);
+
+  const handleImport = async () => {
+    const rows = parseCsv(csv);
+    if (rows.length === 0) {
+      Alert.alert('Erreur', 'Aucune ligne valide détectée. Vérifiez le format.');
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await customersApi.importCsv(restaurantId, rows);
+      const { created, duplicates, errors } = res.data.data;
+      Alert.alert(
+        'Import terminé',
+        `${created} client(s) créé(s)\n${duplicates} doublon(s) ignoré(s)${errors.length > 0 ? `\n${errors.length} erreur(s)` : ''}`,
+      );
+      setCsv('');
+      onImported();
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Import échoué');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <View style={importStyles.overlay}>
+          <View style={importStyles.sheet}>
+            <View style={importStyles.handle} />
+            <Text style={importStyles.title}>Import CSV</Text>
+            <Text style={importStyles.sub}>
+              Collez le contenu d'un fichier CSV.{'\n'}
+              Colonnes attendues : <Text style={importStyles.mono}>prenom, nom, email, telephone</Text>
+            </Text>
+            <View style={importStyles.exampleBox}>
+              <Text style={importStyles.exampleText}>{'prenom,nom,email,telephone\nMarie,Dupont,marie@email.com,+33612345678\nPaul,Martin,paul@email.com'}</Text>
+            </View>
+            <TextInput
+              style={importStyles.input}
+              value={csv}
+              onChangeText={setCsv}
+              placeholder="Collez votre CSV ici..."
+              placeholderTextColor={Colors.textSecondary}
+              multiline
+              textAlignVertical="top"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {preview.length > 0 && (
+              <Text style={importStyles.preview}>{preview.length} ligne(s) détectée(s) et prête(s) à l'import</Text>
+            )}
+            <View style={importStyles.buttons}>
+              <TouchableOpacity style={importStyles.cancelBtn} onPress={() => { setCsv(''); onClose(); }}>
+                <Text style={importStyles.cancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[importStyles.importBtn, (importing || preview.length === 0) && { opacity: 0.5 }]}
+                onPress={handleImport}
+                disabled={importing || preview.length === 0}
+              >
+                {importing
+                  ? <ActivityIndicator color="#000" />
+                  : <Text style={importStyles.importText}>Importer {preview.length > 0 ? `(${preview.length})` : ''}</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -369,14 +559,14 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
             <Text style={previewStyles.closeBtnText}>✕ Fermer</Text>
           </TouchableOpacity>
 
-          {/* Wallet card simulation */}
+          {/* Wallet card preview */}
           <View style={[previewStyles.card, { backgroundColor: restaurant?.color_primary || Colors.gold }]}>
             <View style={previewStyles.cardHeader}>
               <Text style={previewStyles.cardEmoji}>{restaurant?.logo_emoji || '🍽️'}</Text>
               <View>
                 <Text style={previewStyles.cardRestaurantName}>{restaurant?.name}</Text>
                 <View style={previewStyles.simBadge}>
-                  <Text style={previewStyles.simBadgeText}>MODE SIMULATION</Text>
+                  <Text style={previewStyles.simBadgeText}>APERÇU WALLET</Text>
                 </View>
               </View>
             </View>
@@ -422,7 +612,7 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
           </View>
 
           <Text style={previewStyles.disclaimer}>
-            🔶 Cette carte est en MODE SIMULATION. Sans certificat Apple Developer, elle ne peut pas être installée dans l'Apple Wallet.
+            Sans certificat Apple Developer, la carte ne peut pas être installée dans Apple Wallet.
           </Text>
 
           <TouchableOpacity style={previewStyles.shareBtn}>
@@ -432,8 +622,8 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
           <TouchableOpacity
             style={previewStyles.downloadBtn}
             onPress={() => Alert.alert(
-              'MODE SIMULATION',
-              'Cette carte ne peut pas être installée sans certificat Apple Developer. En mode production, elle s\'ajouterait automatiquement au Wallet.',
+              'Wallet non configuré',
+              'Cette carte ne peut pas être installée sans certificat Apple Developer. Une fois les certificats configurés, elle pourra être ajoutée au Wallet.',
               [{ text: 'OK' }]
             )}
           >
@@ -445,17 +635,51 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
   );
 }
 
+const qrStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.xl, alignItems: 'center' },
+  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, marginBottom: Spacing.lg },
+  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
+  sub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.xl },
+  qrBox: { backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: Spacing.lg },
+  urlBox: { backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, width: '100%' },
+  urlText: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', fontFamily: 'monospace' },
+  hint: { fontSize: 12, color: Colors.textMuted, marginBottom: Spacing.xl, textAlign: 'center' },
+  closeBtn: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, width: '100%', alignItems: 'center', marginBottom: 8 },
+  closeBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
+});
+
+const importStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
+  sheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, maxHeight: '90%' },
+  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
+  title: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
+  sub: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 18 },
+  mono: { fontFamily: 'monospace', color: Colors.gold },
+  exampleBox: { backgroundColor: Colors.background, borderRadius: BorderRadius.sm, padding: Spacing.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  exampleText: { fontSize: 11, color: Colors.textMuted, fontFamily: 'monospace', lineHeight: 18 },
+  input: { backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, color: Colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: Colors.border, height: 140, marginBottom: Spacing.sm, fontFamily: 'monospace' },
+  preview: { fontSize: 13, color: Colors.success, marginBottom: Spacing.md, fontWeight: '600' },
+  buttons: { flexDirection: 'row', gap: Spacing.md, paddingBottom: 32 },
+  cancelBtn: { flex: 1, backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
+  cancelText: { color: Colors.textSecondary, fontWeight: '600' },
+  importBtn: { flex: 2, backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
+  importText: { color: '#000', fontWeight: '700', fontSize: 15 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.lg, paddingTop: 60 },
   title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
   count: { fontSize: 14, color: Colors.textSecondary },
+  headerActions: { flexDirection: 'row', gap: Spacing.sm },
+  headerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card,
     marginHorizontal: Spacing.lg, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md,
     marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
   },
-  searchIcon: { fontSize: 16, marginRight: Spacing.sm },
+  searchIcon: { marginRight: Spacing.sm },
   searchInput: { flex: 1, color: Colors.textPrimary, fontSize: 15, paddingVertical: 12 },
   clearSearch: { fontSize: 16, color: Colors.textSecondary, padding: 4 },
   filtersScroll: { paddingLeft: Spacing.lg, marginBottom: Spacing.md, flexGrow: 0 },
@@ -468,7 +692,6 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: '#000', fontWeight: '600' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
-  emptyEmoji: { fontSize: 64, marginBottom: Spacing.lg },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
   fab: {
@@ -511,6 +734,10 @@ const cardStyles = StyleSheet.create({
   stampDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
   stampDotFilled: { backgroundColor: Colors.gold, borderColor: Colors.gold },
   stampsCount: { fontSize: 12, color: Colors.textSecondary, marginLeft: Spacing.sm },
+  pointsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(201,168,76,0.15)', borderRadius: BorderRadius.sm, paddingHorizontal: 8, paddingVertical: 3 },
+  pointsBadgeText: { fontSize: 13, color: Colors.gold, fontWeight: '700' },
+  pointsBar: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md, paddingTop: 2 },
+  pointsBarText: { fontSize: 12, color: Colors.textSecondary },
   actions: { flexDirection: 'row', gap: Spacing.sm },
   actionBtn: { flex: 1, backgroundColor: Colors.gold, borderRadius: BorderRadius.sm, padding: Spacing.sm, alignItems: 'center' },
   actionBtnText: { fontSize: 12, color: '#000', fontWeight: '700' },

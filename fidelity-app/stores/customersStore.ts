@@ -1,13 +1,16 @@
 import { create } from 'zustand';
 import { Customer, StampHistory } from '../../shared/types';
 import { customersApi } from '../lib/api';
+import { useRestaurantStore } from './restaurantStore';
 
 interface CustomersState {
   customers: Customer[];
   selectedCustomer: Customer | null;
   customerHistory: StampHistory[];
+  activeRestaurantId: string | null;
   isLoading: boolean;
   error: string | null;
+  resolveRestaurantId: () => string | null;
 
   loadCustomers: (restaurantId: string, params?: { search?: string; filter?: string }) => Promise<void>;
   loadCustomer: (id: string) => Promise<void>;
@@ -24,14 +27,21 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
   customers: [],
   selectedCustomer: null,
   customerHistory: [],
+  activeRestaurantId: null,
   isLoading: false,
   error: null,
+
+  resolveRestaurantId: () => {
+    const fromState = get().activeRestaurantId;
+    if (fromState) return fromState;
+    return useRestaurantStore.getState().restaurant?.id || null;
+  },
 
   loadCustomers: async (restaurantId, params) => {
     try {
       set({ isLoading: true, error: null });
       const res = await customersApi.list(restaurantId, params);
-      set({ customers: res.data.data, isLoading: false });
+      set({ customers: res.data.data, activeRestaurantId: restaurantId, isLoading: false });
     } catch (err) {
       set({ error: 'Impossible de charger les clients', isLoading: false });
     }
@@ -40,7 +50,11 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
   loadCustomer: async (id) => {
     try {
       set({ isLoading: true, error: null });
-      const res = await customersApi.get(id);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) {
+        throw new Error('restaurantId manquant');
+      }
+      const res = await customersApi.get(id, restaurantId);
       set({ selectedCustomer: res.data.data, isLoading: false });
     } catch (err) {
       set({ error: 'Client non trouvé', isLoading: false });
@@ -67,7 +81,9 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
   updateCustomer: async (id, data) => {
     try {
       set({ isLoading: true, error: null });
-      const res = await customersApi.update(id, data);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) throw new Error('restaurantId manquant');
+      const res = await customersApi.update(id, data, restaurantId);
       const updated = res.data.data;
       set((state) => ({
         customers: state.customers.map((c) => (c.id === id ? updated : c)),
@@ -82,7 +98,9 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
 
   deleteCustomer: async (id) => {
     try {
-      await customersApi.delete(id);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) throw new Error('restaurantId manquant');
+      await customersApi.delete(id, restaurantId);
       set((state) => ({
         customers: state.customers.filter((c) => c.id !== id),
         selectedCustomer: state.selectedCustomer?.id === id ? null : state.selectedCustomer,
@@ -95,7 +113,9 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
 
   addStamp: async (id, note) => {
     try {
-      const res = await customersApi.addStamp(id, note);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) throw new Error('restaurantId manquant');
+      const res = await customersApi.addStamp(id, restaurantId, note);
       const updated = res.data.data;
       set((state) => ({
         customers: state.customers.map((c) => (c.id === id ? updated : c)),
@@ -109,7 +129,9 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
 
   addPoints: async (id, points, note) => {
     try {
-      const res = await customersApi.addPoints(id, points, note);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) throw new Error('restaurantId manquant');
+      const res = await customersApi.addPoints(id, restaurantId, points, note);
       const updated = res.data.data;
       set((state) => ({
         customers: state.customers.map((c) => (c.id === id ? updated : c)),
@@ -122,7 +144,9 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
 
   loadHistory: async (id) => {
     try {
-      const res = await customersApi.getHistory(id);
+      const restaurantId = get().resolveRestaurantId();
+      if (!restaurantId) throw new Error('restaurantId manquant');
+      const res = await customersApi.getHistory(id, restaurantId);
       set({ customerHistory: res.data.data });
     } catch (err) {
       set({ customerHistory: [] });

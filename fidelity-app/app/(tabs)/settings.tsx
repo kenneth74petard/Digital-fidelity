@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, Modal, Switch,
+  ScrollView, Alert, Modal, Switch, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
-import { Colors, Spacing, BorderRadius, FOOD_EMOJIS, PRESET_COLORS } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, getThemeMode, setThemeMode, ThemeMode } from '../../constants/theme';
+import { LoyaltyType } from '../../../shared/types';
 
 export default function SettingsScreen() {
   const { restaurant, updateRestaurant, reset } = useRestaurantStore();
@@ -16,10 +18,10 @@ export default function SettingsScreen() {
 
   const [name, setName] = useState(restaurant?.name || '');
   const [description, setDescription] = useState(restaurant?.description || '');
-  const [emoji, setEmoji] = useState(restaurant?.logo_emoji || '🍽️');
-  const [color, setColor] = useState(restaurant?.color_primary || '#c9a84c');
+  const [loyaltyType, setLoyaltyType] = useState<LoyaltyType>(restaurant?.loyalty_type || 'stamps');
   const [stampGoal, setStampGoal] = useState(restaurant?.stamp_goal || 10);
   const [pointsPerVisit, setPointsPerVisit] = useState(restaurant?.points_per_visit || 100);
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(getThemeMode());
   const [saving, setSaving] = useState(false);
 
   // SQLite stores booleans as 0/1 integers — use Boolean() to normalise
@@ -29,8 +31,8 @@ export default function SettingsScreen() {
     if (!name.trim()) { Alert.alert('Erreur', 'Le nom est requis'); return; }
     try {
       setSaving(true);
-      await updateRestaurant({ name, description, logo_emoji: emoji, color_primary: color, color_secondary: '#1a1a24', stamp_goal: stampGoal, points_per_visit: pointsPerVisit });
-      Alert.alert('✅ Sauvegardé', 'Vos paramètres ont été mis à jour');
+      await updateRestaurant({ name, description, loyalty_type: loyaltyType, stamp_goal: stampGoal, points_per_visit: pointsPerVisit });
+      Alert.alert('Sauvegardé', 'Vos paramètres ont été mis à jour');
     } catch {
       Alert.alert('Erreur', 'Impossible de sauvegarder');
     } finally {
@@ -61,51 +63,85 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleThemeChange = (isDarkEnabled: boolean) => {
+    const nextMode: ThemeMode = isDarkEnabled ? 'dark' : 'light';
+    setThemeModeState(nextMode);
+    setThemeMode(nextMode);
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.reload();
+      return;
+    }
+
+    Alert.alert('Apparence', 'Le thème a été enregistré. Rechargez la page pour l\'appliquer partout.');
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <Text style={styles.pageTitle}>Réglages</Text>
 
       {/* Restaurant section */}
+      <SectionTitle title="Apparence" />
+      <View style={styles.card}>
+        <View style={[styles.menuItem, { borderBottomWidth: 0, paddingVertical: 0 }]}> 
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name={themeMode === 'dark' ? 'moon-outline' : 'sunny-outline'} size={18} color={Colors.textPrimary} />
+            <Text style={styles.menuItemText}>Mode sombre</Text>
+          </View>
+          <Switch
+            value={themeMode === 'dark'}
+            onValueChange={handleThemeChange}
+            thumbColor={themeMode === 'dark' ? Colors.gold : '#f4f3f4'}
+            trackColor={{ false: '#d7d2c7', true: 'rgba(201,168,76,0.4)' }}
+          />
+        </View>
+      </View>
+
+      {/* Restaurant section */}
       <SectionTitle title="Mon Restaurant" />
       <View style={styles.card}>
+        <Field label="Système de fidélité">
+          <View style={styles.loyaltyRow}>
+            <TouchableOpacity
+              style={[styles.loyaltyBtn, loyaltyType === 'stamps' && styles.loyaltyBtnActive]}
+              onPress={() => setLoyaltyType('stamps')}
+            >
+              <Ionicons name="ribbon" size={18} color={loyaltyType === 'stamps' ? '#000' : Colors.textSecondary} />
+              <Text style={[styles.loyaltyBtnText, loyaltyType === 'stamps' && styles.loyaltyBtnTextActive]}>Tampons</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.loyaltyBtn, loyaltyType === 'points' && styles.loyaltyBtnActive]}
+              onPress={() => setLoyaltyType('points')}
+            >
+              <Ionicons name="star" size={18} color={loyaltyType === 'points' ? '#000' : Colors.textSecondary} />
+              <Text style={[styles.loyaltyBtnText, loyaltyType === 'points' && styles.loyaltyBtnTextActive]}>Points</Text>
+            </TouchableOpacity>
+          </View>
+        </Field>
         <Field label="Nom du restaurant">
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nom..." placeholderTextColor={Colors.textSecondary} />
         </Field>
         <Field label="Description">
           <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Description..." placeholderTextColor={Colors.textSecondary} multiline />
         </Field>
-        <Field label="Logo emoji">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.emojiRow}>
-              {FOOD_EMOJIS.map((e) => (
-                <TouchableOpacity key={e} style={[styles.emojiItem, emoji === e && styles.emojiSelected]} onPress={() => setEmoji(e)}>
-                  <Text style={styles.emojiText}>{e}</Text>
-                </TouchableOpacity>
-              ))}
+        {loyaltyType === 'stamps' && (
+          <Field label={`Objectif tampons: ${stampGoal}`}>
+            <View style={styles.counterRow}>
+              <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.max(5, stampGoal - 1))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
+              <Text style={styles.counterValue}>{stampGoal}</Text>
+              <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.min(20, stampGoal + 1))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
             </View>
-          </ScrollView>
-        </Field>
-        <Field label="Couleur principale">
-          <View style={styles.colorRow}>
-            {PRESET_COLORS.map((c) => (
-              <TouchableOpacity key={c} style={[styles.colorDot, { backgroundColor: c }, color === c && styles.colorDotSelected]} onPress={() => setColor(c)} />
-            ))}
-          </View>
-        </Field>
-        <Field label={`Objectif tampons: ${stampGoal}`}>
-          <View style={styles.counterRow}>
-            <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.max(5, stampGoal - 1))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
-            <Text style={styles.counterValue}>{stampGoal}</Text>
-            <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.min(20, stampGoal + 1))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
-          </View>
-        </Field>
-        <Field label={`Points par visite: ${pointsPerVisit}`}>
-          <View style={styles.counterRow}>
-            <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.max(50, pointsPerVisit - 50))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
-            <Text style={styles.counterValue}>{pointsPerVisit}</Text>
-            <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.min(500, pointsPerVisit + 50))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
-          </View>
-        </Field>
+          </Field>
+        )}
+        {loyaltyType === 'points' && (
+          <Field label={`Points par visite: ${pointsPerVisit}`}>
+            <View style={styles.counterRow}>
+              <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.max(50, pointsPerVisit - 50))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
+              <Text style={styles.counterValue}>{pointsPerVisit}</Text>
+              <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.min(500, pointsPerVisit + 50))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
+            </View>
+          </Field>
+        )}
         <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Text>
         </TouchableOpacity>
@@ -114,15 +150,6 @@ export default function SettingsScreen() {
       {/* Push Notifications */}
       <SectionTitle title="Notifications Push" />
       <View style={styles.card}>
-        <View style={styles.simBanner}>
-          <Text style={styles.simBannerIcon}>🔶</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.simBannerTitle}>MODE SIMULATION</Text>
-            <Text style={styles.simBannerText}>
-              En mode simulation, les notifications sont enregistrées en base de données mais ne sont pas envoyées aux appareils. En production, les Web Push (PWA) nécessitent des clés VAPID, et les notifications iOS Wallet nécessitent APNs.
-            </Text>
-          </View>
-        </View>
         <View style={styles.vapidRow}>
           <Text style={styles.vapidLabel}>Clé publique VAPID</Text>
           <Text style={styles.vapidValue} numberOfLines={2}>{restaurant?.vapid_public_key || 'Non configurée'}</Text>
@@ -133,29 +160,32 @@ export default function SettingsScreen() {
       <SectionTitle title="Conformité RGPD" />
       <View style={styles.card}>
         <TouchableOpacity style={styles.menuItem} onPress={() => setShowGdprModal(true)}>
-          <Text style={styles.menuItemText}>📄 Politique de confidentialité</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="document-text-outline" size={18} color={Colors.textPrimary} />
+            <Text style={styles.menuItemText}>Politique de confidentialité</Text>
+          </View>
           <Text style={styles.menuItemArrow}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={handleExportData}>
-          <Text style={styles.menuItemText}>📥 Exporter toutes les données</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="download-outline" size={18} color={Colors.textPrimary} />
+            <Text style={styles.menuItemText}>Exporter toutes les données</Text>
+          </View>
           <Text style={styles.menuItemArrow}>›</Text>
         </TouchableOpacity>
         <View style={styles.gdprStat}>
-          <Text style={styles.gdprStatText}>
-            ✅ <Text style={styles.gdprStatCount}>{marketingCount}</Text> client{marketingCount !== 1 ? 's' : ''} avec consentement marketing
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+            <Text style={styles.gdprStatText}>
+              <Text style={styles.gdprStatCount}>{marketingCount}</Text> client{marketingCount !== 1 ? 's' : ''} avec consentement marketing
+            </Text>
+          </View>
         </View>
       </View>
 
       {/* Apple Wallet */}
       <SectionTitle title="Apple Wallet" />
       <View style={styles.card}>
-        <View style={styles.walletMode}>
-          <Text style={styles.walletModeLabel}>Mode actuel</Text>
-          <View style={styles.walletModeBadge}>
-            <Text style={styles.walletModeBadgeText}>🔶 SIMULATION</Text>
-          </View>
-        </View>
         <View style={styles.checklist}>
           {[
             { done: false, text: 'Apple Developer Account (99$/an)' },
@@ -163,7 +193,7 @@ export default function SettingsScreen() {
             { done: false, text: 'APNs certificate' },
           ].map((item, i) => (
             <View key={i} style={styles.checklistItem}>
-              <Text style={styles.checklistIcon}>{item.done ? '✅' : '☐'}</Text>
+              <Ionicons name={item.done ? 'checkmark-circle' : 'ellipse-outline'} size={16} color={item.done ? Colors.success : Colors.textSecondary} />
               <Text style={styles.checklistText}>{item.text}</Text>
             </View>
           ))}
@@ -177,7 +207,10 @@ export default function SettingsScreen() {
       <SectionTitle title="Zone de danger" />
       <View style={styles.card}>
         <TouchableOpacity style={styles.dangerBtn} onPress={handleReset}>
-          <Text style={styles.dangerBtnText}>⚠️ Réinitialiser toutes les données</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="warning-outline" size={18} color={Colors.error} />
+            <Text style={styles.dangerBtnText}>Réinitialiser toutes les données</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -278,7 +311,8 @@ const walletInstructions = `MISE EN PRODUCTION APPLE WALLET
 
 Étape 5: Configuration du serveur
 • Éditez backend/.env
-• Passez SIMULATION_MODE=false
+• Activez WALLET_LIVE_MODE=true
+• Activez PUSH_LIVE_MODE=true
 • Renseignez tous les chemins de certificats
 • Placez les fichiers dans backend/certs/
 
@@ -299,13 +333,11 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.sm, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6 },
   input: { backgroundColor: Colors.background, borderRadius: BorderRadius.sm, padding: Spacing.md, color: Colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
   textArea: { height: 70, textAlignVertical: 'top' },
-  emojiRow: { flexDirection: 'row', gap: Spacing.sm },
-  emojiItem: { width: 44, height: 44, borderRadius: BorderRadius.sm, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
-  emojiSelected: { borderColor: Colors.gold, borderWidth: 2 },
-  emojiText: { fontSize: 22 },
-  colorRow: { flexDirection: 'row', gap: Spacing.sm },
-  colorDot: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: 'transparent' },
-  colorDotSelected: { borderColor: '#fff', transform: [{ scale: 1.2 }] },
+  loyaltyRow: { flexDirection: 'row', gap: Spacing.sm },
+  loyaltyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  loyaltyBtnActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
+  loyaltyBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  loyaltyBtnTextActive: { color: '#000' },
   counterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
   counterBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
   counterBtnText: { fontSize: 20, color: Colors.textPrimary },
@@ -313,7 +345,6 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
   saveBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
   simBanner: { flexDirection: 'row', gap: Spacing.md, backgroundColor: 'rgba(255,165,0,0.1)', borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: 'rgba(255,165,0,0.2)', marginBottom: Spacing.md },
-  simBannerIcon: { fontSize: 24 },
   simBannerTitle: { fontSize: 13, fontWeight: '700', color: '#FFA500', marginBottom: 4 },
   simBannerText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
   vapidRow: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: Spacing.md },
@@ -331,7 +362,6 @@ const styles = StyleSheet.create({
   walletModeBadgeText: { fontSize: 12, color: '#FFA500', fontWeight: '600' },
   checklist: { gap: Spacing.sm, marginBottom: Spacing.md },
   checklistItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  checklistIcon: { fontSize: 16 },
   checklistText: { fontSize: 14, color: Colors.textSecondary },
   learnMoreBtn: { borderWidth: 1, borderColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
   learnMoreBtnText: { color: Colors.gold, fontWeight: '600' },

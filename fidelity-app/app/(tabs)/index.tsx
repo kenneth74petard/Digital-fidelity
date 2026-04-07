@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Dimensions, RefreshControl, Alert,
+  Dimensions, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
 import { statsApi } from '../../lib/api';
@@ -60,17 +61,14 @@ export default function DashboardScreen() {
             <Text style={styles.headerDate}>{format(new Date(), "EEEE d MMMM", { locale: fr })}</Text>
           </View>
         </View>
-        <View style={styles.simBadge}>
-          <Text style={styles.simBadgeText}>🔶 SIMULATION</Text>
-        </View>
       </View>
 
       {/* Stats Row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
-        <StatCard icon="👥" value={stats?.total_customers || 0} label="Total clients" />
-        <StatCard icon="🎯" value={stats?.stamps_given_today || 0} label="Tampons aujourd'hui" />
-        <StatCard icon="📨" value={stats?.notifications_sent_total || 0} label="Notifications" />
-        <StatCard icon="⭐" value={stats?.stamps_given_week || 0} label="Tampons semaine" />
+        <StatCard icon="people" value={stats?.total_customers || 0} label="Total clients" />
+        <StatCard icon="ribbon" value={stats?.stamps_given_today || 0} label="Tampons aujourd'hui" />
+        <StatCard icon="notifications" value={stats?.notifications_sent_total || 0} label="Notifications" />
+        <StatCard icon="star" value={stats?.stamps_given_week || 0} label="Tampons semaine" />
       </ScrollView>
 
       {/* Chart */}
@@ -93,7 +91,7 @@ export default function DashboardScreen() {
         </View>
         {recentCustomers.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyEmoji}>👥</Text>
+            <Ionicons name="people-outline" size={40} color={Colors.textSecondary} style={{ marginBottom: Spacing.md }} />
             <Text style={styles.emptyTitle}>Aucun client</Text>
             <Text style={styles.emptySubtitle}>Commencez par ajouter vos premiers clients</Text>
           </View>
@@ -107,25 +105,25 @@ export default function DashboardScreen() {
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(tabs)/clients')}>
-          <Text style={styles.actionButtonIcon}>📷</Text>
+          <Ionicons name="camera" size={24} color="#000" />
           <Text style={styles.actionButtonText}>Scanner un client</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.actionButtonSecondary]}
           onPress={() => router.push('/(tabs)/clients')}
         >
-          <Text style={styles.actionButtonIcon}>➕</Text>
-          <Text style={styles.actionButtonText}>Ajouter un client</Text>
+          <Ionicons name="person-add" size={24} color={Colors.textSecondary} />
+          <Text style={[styles.actionButtonText, { color: Colors.textPrimary }]}>Ajouter un client</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
 
-function StatCard({ icon, value, label }: { icon: string; value: number; label: string }) {
+function StatCard({ icon, value, label }: { icon: keyof typeof Ionicons.glyphMap; value: number; label: string }) {
   return (
     <View style={statStyles.card}>
-      <Text style={statStyles.icon}>{icon}</Text>
+      <Ionicons name={icon} size={24} color={Colors.gold} style={{ marginBottom: Spacing.sm }} />
       <Text style={statStyles.value}>{value}</Text>
       <Text style={statStyles.label}>{label}</Text>
     </View>
@@ -199,6 +197,7 @@ const styles = StyleSheet.create({
   restaurantName: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
   headerDate: { fontSize: 13, color: Colors.textSecondary, textTransform: 'capitalize' },
   simBadge: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(255,165,0,0.15)', borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,165,0,0.3)',
   },
@@ -216,7 +215,6 @@ const styles = StyleSheet.create({
   seeAll: { fontSize: 13, color: Colors.gold },
   emptyText: { color: Colors.textSecondary, textAlign: 'center', padding: Spacing.md },
   emptyCard: { backgroundColor: Colors.card, borderRadius: BorderRadius.lg, padding: Spacing.xl, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  emptyEmoji: { fontSize: 40, marginBottom: Spacing.md },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.sm },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
   quickActions: { flexDirection: 'row', gap: Spacing.md, marginHorizontal: Spacing.lg, marginTop: Spacing.sm },
@@ -225,7 +223,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md, alignItems: 'center', gap: Spacing.sm,
   },
   actionButtonSecondary: { backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border },
-  actionButtonIcon: { fontSize: 24 },
   actionButtonText: { fontSize: 13, fontWeight: '600', color: '#000' },
 });
 
@@ -235,7 +232,6 @@ const statStyles = StyleSheet.create({
     padding: Spacing.md, marginRight: Spacing.md, minWidth: 120,
     alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
   },
-  icon: { fontSize: 24, marginBottom: Spacing.sm },
   value: { fontSize: 28, fontWeight: '800', color: Colors.gold },
   label: { fontSize: 11, color: Colors.textSecondary, textAlign: 'center', marginTop: 2 },
 });

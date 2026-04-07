@@ -93,7 +93,7 @@ async function seed() {
   console.log('✅ Notifications de démo créées');
   console.log('\n🎉 Base de données initialisée avec succès!');
   console.log(`📋 Restaurant ID: ${restaurantId}`);
-  console.log('   Sauvegardez cet ID pour la configuration de l\'app mobile.');
+  console.log('   Sauvegardez cet ID pour la configuration de la web app.');
 }
 
 seed()

@@ -13,7 +13,7 @@ interface NotificationsState {
     title: string;
     body: string;
     type: string;
-  }) => Promise<{ sent_count: number; simulation: boolean }>;
+  }) => Promise<{ sent_count: number; push_dry_run: boolean }>;
   scheduleNotification: (data: {
     restaurant_id: string;
     title: string;
@@ -21,7 +21,7 @@ interface NotificationsState {
     type: string;
     scheduled_at: string;
   }) => Promise<void>;
-  cancelNotification: (id: string) => Promise<void>;
+  cancelNotification: (id: string, restaurantId: string) => Promise<void>;
 }
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
@@ -46,7 +46,7 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
       // Reload notifications to include the newly sent one
       await get().loadNotifications(data.restaurant_id);
       set({ isLoading: false });
-      return { sent_count: res.data.data.sent_count, simulation: res.data.simulation };
+      return { sent_count: res.data.data.sent_count, push_dry_run: res.data.push_dry_run };
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Erreur lors de l\'envoi';
       set({ error: msg, isLoading: false });
@@ -67,9 +67,9 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     }
   },
 
-  cancelNotification: async (id) => {
+  cancelNotification: async (id, restaurantId) => {
     try {
-      await notificationsApi.delete(id);
+      await notificationsApi.delete(id, restaurantId);
       set((state) => ({
         notifications: state.notifications.filter((n) => n.id !== id),
       }));

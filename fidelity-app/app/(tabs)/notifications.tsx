@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 // DateTimePicker only works on native — use text input fallback on web
 const DateTimePicker = Platform.OS !== 'web'
   ? require('@react-native-community/datetimepicker').default
@@ -17,11 +18,11 @@ import { fr } from 'date-fns/locale';
 
 type TabType = 'send' | 'schedule' | 'history';
 
-const NOTIF_TYPES: { type: NotificationType; icon: string; label: string }[] = [
-  { type: 'menu', icon: '📋', label: 'Menu' },
-  { type: 'offer', icon: '🏷️', label: 'Offre' },
-  { type: 'event', icon: '🎉', label: 'Événement' },
-  { type: 'general', icon: '📢', label: 'Général' },
+const NOTIF_TYPES: { type: NotificationType; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { type: 'menu', icon: 'restaurant-outline', label: 'Menu' },
+  { type: 'offer', icon: 'pricetag-outline', label: 'Offre' },
+  { type: 'event', icon: 'sparkles-outline', label: 'Événement' },
+  { type: 'general', icon: 'megaphone-outline', label: 'Général' },
 ];
 
 export default function NotificationsScreen() {
@@ -100,10 +101,10 @@ function SendTab({
             try {
               setSending(true);
               const result = await sendNotification({ restaurant_id: restaurantId, title, body, type });
-              const msg = result.simulation
-                ? `[MODE SIMULATION] Notification enregistrée. En production, elle serait envoyée à ${result.sent_count} client(s).`
+              const msg = result.push_dry_run
+                ? `Notification enregistrée. En mode live, elle sera envoyée à ${result.sent_count} client(s).`
                 : `Notification envoyée à ${result.sent_count} client(s)`;
-              Alert.alert('✅ Succès', msg);
+              Alert.alert('Succès', msg);
               setTitle('');
               setBody('');
             } catch (err: any) {
@@ -128,7 +129,7 @@ function SendTab({
             style={[styles.typeChip, type === t && styles.typeChipActive]}
             onPress={() => setType(t)}
           >
-            <Text style={styles.typeIcon}>{icon}</Text>
+            <Ionicons name={icon} size={20} color={type === t ? '#000' : Colors.textSecondary} />
             <Text style={[styles.typeLabel, type === t && styles.typeLabelActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
@@ -177,7 +178,7 @@ function SendTab({
           </View>
           <View style={styles.notifBubble}>
             <View style={styles.notifAppIcon}>
-              <Text style={styles.notifAppEmoji}>🏆</Text>
+              <Ionicons name="trophy" size={20} color="#000" />
             </View>
             <View style={styles.notifContent}>
               <View style={styles.notifHeader}>
@@ -196,9 +197,12 @@ function SendTab({
       </View>
 
       <View style={styles.recipientsInfo}>
-        <Text style={styles.recipientsText}>
-          📨 Sera envoyé à <Text style={styles.recipientsCount}>{marketingCount}</Text> client(s) avec consentement marketing
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="mail-outline" size={14} color={Colors.textSecondary} />
+          <Text style={styles.recipientsText}>
+            Sera envoyé à <Text style={styles.recipientsCount}>{marketingCount}</Text> client(s) avec consentement marketing
+          </Text>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -240,7 +244,7 @@ function ScheduleTab({
         type,
         scheduled_at: scheduledDate.toISOString(),
       });
-      Alert.alert('✅ Planifiée', `Notification planifiée pour le ${format(scheduledDate, "d MMMM à HH'h'mm", { locale: fr })}`);
+      Alert.alert('Planifiée', `Notification planifiée pour le ${format(scheduledDate, "d MMMM à HH'h'mm", { locale: fr })}`);
       setTitle('');
       setBody('');
     } catch (err: any) {
@@ -259,7 +263,7 @@ function ScheduleTab({
             style={[styles.typeChip, type === t && styles.typeChipActive]}
             onPress={() => setType(t)}
           >
-            <Text style={styles.typeIcon}>{icon}</Text>
+            <Ionicons name={icon} size={20} color={type === t ? '#000' : Colors.textSecondary} />
             <Text style={[styles.typeLabel, type === t && styles.typeLabelActive]}>{label}</Text>
           </TouchableOpacity>
         ))}
@@ -286,9 +290,12 @@ function ScheduleTab({
       ) : (
         <>
           <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
-            <Text style={styles.datePickerText}>
-              📅 {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
+              <Text style={styles.datePickerText}>
+                {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
+              </Text>
+            </View>
           </TouchableOpacity>
           {showDatePicker && DateTimePicker && (
             <DateTimePicker
@@ -321,7 +328,7 @@ function ScheduleTab({
             <NotifItem key={n.id} notification={n} onCancel={() => {
               Alert.alert('Annuler ?', 'Voulez-vous annuler cette notification planifiée ?', [
                 { text: 'Non', style: 'cancel' },
-                { text: 'Oui', onPress: () => cancelNotification(n.id) },
+                { text: 'Oui', onPress: () => cancelNotification(n.id, restaurantId) },
               ]);
             }} />
           ))}
@@ -335,7 +342,7 @@ function HistoryTab({ notifications }: { notifications: Notification[] }) {
   if (notifications.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyEmoji}>📭</Text>
+        <Ionicons name="mail-unread-outline" size={64} color={Colors.textSecondary} style={{ marginBottom: Spacing.lg }} />
         <Text style={styles.emptyTitle}>Aucun historique</Text>
         <Text style={styles.emptySubtitle}>Les notifications envoyées apparaîtront ici</Text>
       </View>
@@ -358,7 +365,7 @@ function NotifItem({ notification, onCancel }: { notification: Notification; onC
   return (
     <View style={notifStyles.item}>
       <View style={notifStyles.left}>
-        <Text style={notifStyles.icon}>{typeInfo.icon}</Text>
+        <Ionicons name={typeInfo.icon} size={24} color={Colors.textSecondary} />
       </View>
       <View style={notifStyles.info}>
         <Text style={notifStyles.title}>{notification.title}</Text>
@@ -424,10 +431,8 @@ const styles = StyleSheet.create({
   notifBubble: {
     backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16,
     padding: Spacing.md, flexDirection: 'row', gap: Spacing.md,
-    backdropFilter: 'blur(20px)',
   },
   notifAppIcon: { width: 36, height: 36, borderRadius: 8, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
-  notifAppEmoji: { fontSize: 20 },
   notifContent: { flex: 1 },
   notifHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   notifAppName: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
@@ -442,7 +447,6 @@ const styles = StyleSheet.create({
   datePicker: { backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.lg },
   datePickerText: { color: Colors.textPrimary, fontSize: 15 },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
-  emptyEmoji: { fontSize: 64, marginBottom: Spacing.lg },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
 });

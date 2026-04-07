@@ -1,12 +1,12 @@
-# FidélitéPro — Application de gestion de cartes de fidélité
+# FidélitéPro — Web app de gestion de cartes de fidélité
 
-Application complète de gestion de programme de fidélité pour restaurants, avec backend Node.js et application mobile Expo (React Native).
+Solution web complète de gestion de programme de fidélité pour restaurants, avec backend Node.js et interface web Expo (React).
 
 ## Structure du projet
 
 ```
 Digital-fidelity/
-├── fidelity-app/         ← Application mobile Expo (React Native)
+├── fidelity-app/         ← Interface web Expo (React)
 ├── backend/              ← API REST Node.js + Express + SQLite
 ├── shared/               ← Types TypeScript partagés
 └── README.md             ← Ce fichier
@@ -20,8 +20,7 @@ Digital-fidelity/
 
 - Node.js 18+
 - npm ou yarn
-- Expo CLI (`npm install -g expo-cli`)
-- Application Expo Go sur votre téléphone (pour les tests)
+- Un navigateur web moderne (Chrome, Safari, Firefox)
 
 ---
 
@@ -35,6 +34,8 @@ npm install
 
 # Copier le fichier de configuration
 cp .env.example .env
+
+# Configurer au minimum ADMIN_API_TOKEN dans backend/.env
 
 # (Optionnel) Remplir la base de données avec des données de démo
 npm run seed
@@ -58,6 +59,7 @@ Si vous n'utilisez pas le seed, créez manuellement votre restaurant:
 
 ```bash
 curl -X POST http://localhost:3000/api/restaurant/setup \
+  -H "Authorization: Bearer change-me" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Mon Restaurant",
@@ -69,11 +71,11 @@ curl -X POST http://localhost:3000/api/restaurant/setup \
   }'
 ```
 
-Notez l'`id` retourné — il sera demandé par l'app lors du premier lancement.
+Notez l'`id` retourné — il sera demandé par l'interface web lors du premier lancement.
 
 ---
 
-### 3. Démarrer l'application mobile
+### 3. Démarrer l'interface web
 
 ```bash
 cd fidelity-app
@@ -84,14 +86,14 @@ npm install
 # Copier le fichier de configuration
 cp .env.example .env
 
-# Si vous testez sur un appareil physique, remplacez localhost par votre IP locale:
+# Configurer EXPO_PUBLIC_ADMIN_TOKEN (meme valeur que ADMIN_API_TOKEN)
+
+# Si vous testez depuis un autre appareil sur le meme reseau, remplacez localhost par votre IP locale:
 # EXPO_PUBLIC_API_URL=http://192.168.1.xxx:3000
 
-# Démarrer Expo
-npm start
+# Démarrer la web app
+npm run web
 ```
-
-Scannez le QR code avec Expo Go (Android) ou l'appareil photo (iOS).
 
 ---
 
@@ -107,7 +109,7 @@ Scannez le QR code avec Expo Go (Android) ou l'appareil photo (iOS).
 - Liste avec recherche et filtres (Tous / Actifs / Récompense disponible)
 - Ajout de clients avec formulaire complet et consentements RGPD
 - Ajout de tampon avec confirmation et détection automatique de récompense
-- Aperçu de la carte de fidélité (simulation Apple Wallet)
+- Aperçu de la carte de fidélité (prévisualisation Apple Wallet)
 - Page de détail: historique, édition, gestion des points
 
 ### Notifications Push
@@ -115,7 +117,7 @@ Scannez le QR code avec Expo Go (Android) ou l'appareil photo (iOS).
 - Planification de notifications futures (minimum 1h à l'avance)
 - Prévisualisation réaliste sur écran de verrouillage iPhone
 - Historique des notifications envoyées
-- **MODE SIMULATION**: notifications enregistrées en BDD mais non envoyées
+- **MODE PRÉPRODUCTION**: notifications enregistrées en BDD mais non envoyées
 
 ### Paramètres
 - Édition des informations du restaurant
@@ -126,11 +128,11 @@ Scannez le QR code avec Expo Go (Android) ou l'appareil photo (iOS).
 
 ---
 
-## 🔶 Mode Simulation
+## 🔶 Mode Préproduction
 
-L'application fonctionne entièrement **sans certificat Apple Developer**:
+La web app fonctionne en mode préproduction **sans certificat Apple Developer**:
 
-| Fonctionnalité | Mode Simulation | Mode Production |
+| Fonctionnalité | Mode Préproduction | Mode Live |
 |---|---|---|
 | Cartes `.pkpass` | Générées mais non installables | Installables dans Apple Wallet |
 | Notifications push iOS | Enregistrées en BDD seulement | Envoyées via APNs |
@@ -152,7 +154,8 @@ Consultez `backend/certs/README.md` pour les instructions détaillées.
 Une fois les certificats obtenus:
 ```env
 # backend/.env
-SIMULATION_MODE=false
+WALLET_LIVE_MODE=true
+PUSH_LIVE_MODE=true
 APPLE_TEAM_ID=VOTRE_TEAM_ID
 APPLE_PASS_TYPE_ID=pass.com.votrerestaurant.fidelite
 APPLE_KEY_PATH=./certs/pass.key
@@ -173,6 +176,18 @@ APPLE_WWDR_PATH=./certs/wwdr.pem
 ---
 
 ## 📡 API REST — Endpoints principaux
+
+Toutes les routes `/api/*` (sauf endpoints publics Wallet) exigent:
+- `Authorization: Bearer <token>`
+- Un scope restaurant (`x-restaurant-id` ou `restaurantId`/`restaurant_id`)
+
+Exemple:
+
+```bash
+curl "http://localhost:3000/api/customers?restaurantId=<RESTAURANT_ID>" \
+  -H "Authorization: Bearer change-me" \
+  -H "x-restaurant-id: <RESTAURANT_ID>"
+```
 
 | Méthode | Endpoint | Description |
 |---|---|---|
@@ -201,9 +216,9 @@ APPLE_WWDR_PATH=./certs/wwdr.pem
 - node-cron (notifications planifiées)
 - uuid
 
-**Application mobile:**
-- Expo ~51 + Expo Router
-- React Native 0.74
+**Frontend web:**
+- Expo ~51 + Expo Router (web)
+- React + React Native Web
 - Zustand (gestion d'état)
 - @shopify/flash-list (listes performantes)
 - date-fns avec locale française

@@ -1,8 +1,8 @@
 # Certificats Apple Developer — Instructions de production
 
-## Mode actuel: SIMULATION
+## Mode actuel: PRÉPRODUCTION
 
-En mode simulation, aucun certificat n'est requis. Les cartes `.pkpass` générées
+En préproduction, aucun certificat n'est requis. Les cartes `.pkpass` générées
 ne peuvent pas être installées dans Apple Wallet, mais ont la structure correcte.
 
 ---
@@ -45,7 +45,8 @@ openssl x509 -inform DER -in AppleWWDRCAG3.cer -out wwdr.pem
 
 ### 6. Configuration du .env
 ```env
-SIMULATION_MODE=false
+WALLET_LIVE_MODE=true
+PUSH_LIVE_MODE=true
 APPLE_TEAM_ID=VOTRE_TEAM_ID
 APPLE_PASS_TYPE_ID=pass.com.votrerestaurant.fidelite
 APPLE_KEY_PATH=./certs/pass.key
