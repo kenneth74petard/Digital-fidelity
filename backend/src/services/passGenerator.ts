@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import zlib from 'zlib';
 import JSZip from 'jszip';
 
+const CRC32_TABLE = makeCrcTable();
+
 // TODO [PRODUCTION]: Import passkit-generator and use real Apple certificates
 // import { PKPass } from 'passkit-generator';
 
@@ -207,10 +209,9 @@ function createPngChunk(type: string, data: Buffer): Buffer {
 }
 
 function crc32(buf: Buffer): number {
-  const table = makeCrcTable();
   let crc = 0xffffffff;
   for (let i = 0; i < buf.length; i++) {
-    crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xff];
+    crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ buf[i]) & 0xff];
   }
   return (crc ^ 0xffffffff) >>> 0;
 }

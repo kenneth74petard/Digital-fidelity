@@ -156,13 +156,31 @@ router.get('/:restaurantId', (req: Request, res: Response) => {
     }
 
     const db = getDb();
+    const parsedLimit = Number.parseInt(String(req.query.limit ?? '50'), 10);
+    const parsedOffset = Number.parseInt(String(req.query.offset ?? '0'), 10);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 500) : 50;
+    const offset = Number.isFinite(parsedOffset) ? Math.max(parsedOffset, 0) : 0;
+
+    const total = (db.prepare(
+      'SELECT COUNT(*) as count FROM notifications WHERE restaurant_id = ?'
+    ).get(req.params.restaurantId) as any).count as number;
+
     const notifications = db.prepare(`
       SELECT * FROM notifications
       WHERE restaurant_id = ?
       ORDER BY created_at DESC
-    `).all(req.params.restaurantId);
+      LIMIT ? OFFSET ?
+    `).all(req.params.restaurantId, limit, offset);
 
-    return res.json({ data: notifications });
+    return res.json({
+      data: notifications,
+      pagination: {
+        total,
+        limit,
+        offset,
+        has_more: offset + notifications.length < total,
+      },
+    });
   } catch (error) {
     return res.status(500).json({ error: 'Erreur serveur' });
   }

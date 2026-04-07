@@ -17,11 +17,12 @@ router.get('/:restaurantId', (req: Request, res: Response) => {
 // ─── POST /register/:restaurantId ─── Traitement ────────────────────────────
 router.post('/:restaurantId', (req: Request, res: Response) => {
   const { restaurantId } = req.params;
-  const { first_name, last_name, email, terms } = req.body;
+  const { first_name, last_name, email, terms, marketing_consent } = req.body;
 
   const safeFirstName = String(first_name || '').trim();
   const safeLastName = String(last_name || '').trim();
   const safeEmail = String(email || '').trim().toLowerCase();
+  const marketingConsent = String(marketing_consent || '').trim() === '1';
 
   if (!safeFirstName || !safeLastName || !safeEmail || !terms) {
     return res.status(400).send(errorPage('Tous les champs sont requis.'));
@@ -47,9 +48,18 @@ router.post('/:restaurantId', (req: Request, res: Response) => {
 
   const registerTx = db.transaction(() => {
     db.prepare(`
-      INSERT INTO customers (id, restaurant_id, first_name, last_name, email, gdpr_consent, marketing_consent, gdpr_consent_at)
-      VALUES (?, ?, ?, ?, ?, 1, 1, ?)
-    `).run(id, restaurantId, safeFirstName, safeLastName, safeEmail, now);
+      INSERT INTO customers (id, restaurant_id, first_name, last_name, email, gdpr_consent, marketing_consent, gdpr_consent_at, marketing_consent_at)
+      VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)
+    `).run(
+      id,
+      restaurantId,
+      safeFirstName,
+      safeLastName,
+      safeEmail,
+      marketingConsent ? 1 : 0,
+      now,
+      marketingConsent ? now : null
+    );
 
     db.prepare('INSERT INTO passes (id, customer_id, serial_number, auth_token) VALUES (?, ?, ?, ?)').run(uuidv4(), id, uuidv4(), uuidv4());
     db.prepare('INSERT INTO gdpr_log (id, customer_id, action, performed_by) VALUES (?, ?, ?, ?)').run(uuidv4(), id, 'consent_given', 'customer_self');
@@ -221,7 +231,13 @@ function formPage(r: any) {
       <div class="terms-check">
         <input type="checkbox" name="terms" value="1" id="terms" required>
         <label class="terms-label" for="terms">
-          J'accepte que <strong style="color:#e8e0d0">${restaurantName}</strong> utilise mes données pour gérer ma carte de fidélité et m'envoyer des offres personnalisées. <a href="#">Conditions générales</a>
+          J'accepte que <strong style="color:#e8e0d0">${restaurantName}</strong> utilise mes données pour gérer ma carte de fidélité. <a href="#">Conditions générales</a>
+        </label>
+      </div>
+      <div class="terms-check" style="margin-top:12px">
+        <input type="checkbox" name="marketing_consent" value="1" id="marketing_consent">
+        <label class="terms-label" for="marketing_consent">
+          J'accepte de recevoir des offres marketing par email (optionnel).
         </label>
       </div>
     </div>

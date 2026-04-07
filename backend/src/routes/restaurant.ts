@@ -66,7 +66,7 @@ router.post('/setup', (req: Request, res: Response) => {
       safeStampGoal,
       safePointsPerVisit,
       vapidKeys.publicKey,
-      null
+      vapidKeys.privateKey
     );
 
     const restaurant = db.prepare(

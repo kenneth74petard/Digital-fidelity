@@ -86,13 +86,21 @@ export const BorderRadius = {
 };
 
 export const Typography = {
-  h1: { fontSize: 28, fontWeight: '700' as const, color: '#f5f0e8' },
-  h2: { fontSize: 22, fontWeight: '700' as const, color: '#f5f0e8' },
-  h3: { fontSize: 18, fontWeight: '600' as const, color: '#f5f0e8' },
-  body: { fontSize: 15, fontWeight: '400' as const, color: '#f5f0e8' },
-  small: { fontSize: 13, fontWeight: '400' as const, color: 'rgba(255,255,255,0.5)' },
-  caption: { fontSize: 11, fontWeight: '400' as const, color: 'rgba(255,255,255,0.3)' },
-  label: { fontSize: 12, fontWeight: '600' as const, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' as const, letterSpacing: 0.8 },
+  get h1() { return { fontSize: 28, fontWeight: '700' as const, color: Colors.textPrimary }; },
+  get h2() { return { fontSize: 22, fontWeight: '700' as const, color: Colors.textPrimary }; },
+  get h3() { return { fontSize: 18, fontWeight: '600' as const, color: Colors.textPrimary }; },
+  get body() { return { fontSize: 15, fontWeight: '400' as const, color: Colors.textPrimary }; },
+  get small() { return { fontSize: 13, fontWeight: '400' as const, color: Colors.textSecondary }; },
+  get caption() { return { fontSize: 11, fontWeight: '400' as const, color: Colors.textMuted }; },
+  get label() {
+    return {
+      fontSize: 12,
+      fontWeight: '600' as const,
+      color: Colors.textSecondary,
+      textTransform: 'uppercase' as const,
+      letterSpacing: 0.8,
+    };
+  },
 };
 
 export const FOOD_EMOJIS = ['🍽️', '🥐', '🍕', '🍔', '🍣', '🥗', '🍜', '🥩', '🍰', '☕', '🍷', '🍺', '🥂', '🌮', '🍱', '🥘', '🍲', '🧆', '🥞', '🫕'];
