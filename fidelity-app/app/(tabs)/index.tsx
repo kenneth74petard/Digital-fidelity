@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Dimensions, RefreshControl,
+  Dimensions, RefreshControl, Modal, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
 import { statsApi } from '../../lib/api';
@@ -20,6 +21,9 @@ export default function DashboardScreen() {
   const { customers, loadCustomers } = useCustomersStore();
   const [stats, setStats] = useState<Stats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  const scanLock = useRef(false);
 
   const loadData = useCallback(async () => {
     if (!restaurant) return;
@@ -40,6 +44,31 @@ export default function DashboardScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleOpenScanner = async () => {
+    if (Platform.OS === 'web') {
+      // Camera scanning not well supported on web — fallback to clients list
+      router.push('/(tabs)/clients');
+      return;
+    }
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) return;
+    }
+    scanLock.current = false;
+    setShowScanner(true);
+  };
+
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
+    if (scanLock.current) return;
+    // QR format: fidelite:{customerId}
+    const match = data.match(/^fidelite:(.+)$/);
+    if (match) {
+      scanLock.current = true;
+      setShowScanner(false);
+      router.push(`/clients/${match[1]}` as any);
+    }
   };
 
   const recentCustomers = customers.slice(0, 5);
@@ -104,7 +133,7 @@ export default function DashboardScreen() {
 
       {/* Quick Actions */}
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/(tabs)/clients')}>
+        <TouchableOpacity style={styles.actionButton} onPress={handleOpenScanner}>
           <Ionicons name="camera" size={24} color="#000" />
           <Text style={styles.actionButtonText}>Scanner un client</Text>
         </TouchableOpacity>
@@ -116,6 +145,29 @@ export default function DashboardScreen() {
           <Text style={[styles.actionButtonText, { color: Colors.textPrimary }]}>Ajouter un client</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Scanner Modal */}
+      <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+        <View style={scannerStyles.container}>
+          <CameraView
+            style={scannerStyles.camera}
+            facing="front"
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={handleBarCodeScanned}
+          />
+          <View style={scannerStyles.overlay}>
+            <View style={scannerStyles.header}>
+              <TouchableOpacity onPress={() => setShowScanner(false)} style={scannerStyles.closeBtn}>
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+              <Text style={scannerStyles.title}>Scanner un QR client</Text>
+              <View style={{ width: 28 }} />
+            </View>
+            <View style={scannerStyles.reticle} />
+            <Text style={scannerStyles.hint}>Placez le QR code du client dans le cadre</Text>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -243,6 +295,17 @@ const chartStyles = StyleSheet.create({
   bar: { width: 24, borderRadius: 4, minHeight: 4 },
   label: { fontSize: 9, color: Colors.textSecondary, textAlign: 'center' },
   count: { fontSize: 11, color: Colors.gold, fontWeight: '600' },
+});
+
+const scannerStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000' },
+  camera: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'space-between', alignItems: 'center', paddingVertical: 60 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20 },
+  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  reticle: { width: 250, height: 250, borderWidth: 3, borderColor: Colors.gold, borderRadius: 24 },
+  hint: { fontSize: 15, color: 'rgba(255,255,255,0.8)', textAlign: 'center', paddingHorizontal: 40 },
 });
 
 const rowStyles = StyleSheet.create({
