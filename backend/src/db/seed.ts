@@ -29,7 +29,7 @@ async function seed() {
     100
   );
 
-  console.log(`✅ Restaurant créé: Le Petit Bistrot (${restaurantId})`);
+  console.log(`✅ Commerce créé: Le Petit Bistrot (${restaurantId})`);
 
   // Create demo customers
   const customers = [
@@ -92,7 +92,7 @@ async function seed() {
 
   console.log('✅ Notifications de démo créées');
   console.log('\n🎉 Base de données initialisée avec succès!');
-  console.log(`📋 Restaurant ID: ${restaurantId}`);
+  console.log(`📋 Commerce ID: ${restaurantId}`);
   console.log('   Sauvegardez cet ID pour la configuration de la web app.');
 }
 

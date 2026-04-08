@@ -2,6 +2,7 @@
 
 export type LoyaltyType = 'stamps' | 'points';
 
+// Restaurant naming kept for DB/API backwards compatibility but represents any merchant type
 export interface Restaurant {
   id: string;
   name: string;

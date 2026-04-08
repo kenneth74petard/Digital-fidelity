@@ -562,7 +562,7 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
           {/* Wallet card preview */}
           <View style={[previewStyles.card, { backgroundColor: restaurant?.color_primary || Colors.gold }]}>
             <View style={previewStyles.cardHeader}>
-              <Text style={previewStyles.cardEmoji}>{restaurant?.logo_emoji || '🍽️'}</Text>
+              <Text style={previewStyles.cardEmoji}>{restaurant?.logo_emoji || '🏪'}</Text>
               <View>
                 <Text style={previewStyles.cardRestaurantName}>{restaurant?.name}</Text>
                 <View style={previewStyles.simBadge}>

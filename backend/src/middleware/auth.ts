@@ -99,7 +99,7 @@ export function requireApiToken(req: Request, res: Response, next: NextFunction)
 
   const restaurantScope = resolveRestaurantScopeFromRequest(req);
   if (restaurantScope === '__mismatch__') {
-    res.status(400).json({ error: 'Conflit de scope restaurant dans la requete' });
+    res.status(400).json({ error: 'Conflit de scope commerce dans la requete' });
     return;
   }
 
@@ -109,7 +109,7 @@ export function requireApiToken(req: Request, res: Response, next: NextFunction)
       return;
     }
     res.status(400).json({
-      error: 'Scope restaurant manquant. Envoyez x-restaurant-id ou restaurant_id/restaurantId.',
+      error: 'Scope commerce manquant. Envoyez x-restaurant-id ou restaurant_id/restaurantId.',
     });
     return;
   }

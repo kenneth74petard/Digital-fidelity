@@ -1,6 +1,6 @@
 # FidélitéPro — Web app de gestion de cartes de fidélité
 
-Solution web complète de gestion de programme de fidélité pour restaurants, avec backend Node.js et interface web Expo (React).
+Solution web complète de gestion de programme de fidélité pour commerces de proximité (restaurants, salons de coiffure, boulangeries, etc.), avec backend Node.js et interface web Expo (React).
 
 ## Structure du projet
 
@@ -53,18 +53,18 @@ curl http://localhost:3000/health
 
 ---
 
-### 2. Créer votre premier restaurant (via l'API)
+### 2. Créer votre premier commerce (via l'API)
 
-Si vous n'utilisez pas le seed, créez manuellement votre restaurant:
+Si vous n'utilisez pas le seed, créez manuellement votre commerce:
 
 ```bash
 curl -X POST http://localhost:3000/api/restaurant/setup \
   -H "Authorization: Bearer change-me" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Mon Restaurant",
-    "description": "Description de mon restaurant",
-    "logo_emoji": "🍽️",
+    "name": "Mon Commerce",
+    "description": "Description de mon commerce",
+    "logo_emoji": "🏪",
     "color_primary": "#c9a84c",
     "stamp_goal": 10,
     "points_per_visit": 100
@@ -120,7 +120,7 @@ npm run web
 - **MODE PRÉPRODUCTION**: notifications enregistrées en BDD mais non envoyées
 
 ### Paramètres
-- Édition des informations du restaurant
+- Édition des informations du commerce
 - Gestion des clés VAPID pour les notifications push
 - Conformité RGPD: politique de confidentialité, export des données
 - Guide Apple Wallet: checklist de production, instructions pas-à-pas
@@ -157,7 +157,7 @@ Une fois les certificats obtenus:
 WALLET_LIVE_MODE=true
 PUSH_LIVE_MODE=true
 APPLE_TEAM_ID=VOTRE_TEAM_ID
-APPLE_PASS_TYPE_ID=pass.com.votrerestaurant.fidelite
+APPLE_PASS_TYPE_ID=pass.com.votrecommerce.fidelite
 APPLE_KEY_PATH=./certs/pass.key
 APPLE_CERT_PATH=./certs/pass.pem
 APPLE_WWDR_PATH=./certs/wwdr.pem
@@ -191,7 +191,7 @@ curl "http://localhost:3000/api/customers?restaurantId=<RESTAURANT_ID>" \
 
 | Méthode | Endpoint | Description |
 |---|---|---|
-| POST | `/api/restaurant/setup` | Créer un restaurant |
+| POST | `/api/restaurant/setup` | Créer un commerce |
 | GET | `/api/restaurant/:id` | Obtenir les infos |
 | GET | `/api/customers?restaurantId=xxx` | Liste des clients |
 | POST | `/api/customers` | Créer un client |

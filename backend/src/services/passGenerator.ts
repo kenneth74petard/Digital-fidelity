@@ -82,7 +82,7 @@ function generatePassJson(data: PassData) {
 
   return {
     formatVersion: 1,
-    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || 'pass.com.votrerestaurant.fidelite',
+    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || 'pass.com.votrecommerce.fidelite',
     serialNumber: data.serialNumber,
     teamIdentifier: process.env.APPLE_TEAM_ID || 'TEAM_ID_REQUIRED',
     organizationName: data.restaurantName,
