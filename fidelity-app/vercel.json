@@ -1,6 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/api/:path*", "destination": "http://165.232.121.186:3002/api/:path*" },
+    { "source": "/health", "destination": "http://165.232.121.186:3002/health" },
+    { "source": "/register/:path*", "destination": "http://165.232.121.186:3002/register/:path*" },
     { "source": "/", "destination": "/landing.html" },
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/privacy", "destination": "/privacy.html" },

@@ -4,17 +4,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Sur le web, utiliser des URLs relatives (le frontend et l'API sont servis depuis le même serveur)
 // Sur mobile natif, utiliser la variable d'environnement
 function getBaseUrl(): string {
-  const envUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
+  // On web, always use relative URLs — Vercel rewrites proxy /api/* to the backend
+  if (typeof window !== 'undefined' && window.location) {
+    return '';
+  }
 
-  // In local Expo web dev (localhost:8081), API is usually on another origin (localhost:3000).
-  // Prefer explicit env URL when provided.
+  const envUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
   if (envUrl) {
     return envUrl;
   }
 
-  if (typeof window !== 'undefined' && window.location) {
-    return ''; // URLs relatives : /api/... → même serveur
-  }
   return 'http://localhost:3000';
 }
 
