@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Dimensions, RefreshControl, Modal, Platform,
+  Dimensions, RefreshControl, Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,11 +47,6 @@ export default function DashboardScreen() {
   };
 
   const handleOpenScanner = async () => {
-    if (Platform.OS === 'web') {
-      // Camera scanning not well supported on web — fallback to clients list
-      router.push('/(tabs)/clients');
-      return;
-    }
     if (!permission?.granted) {
       const result = await requestPermission();
       if (!result.granted) return;
