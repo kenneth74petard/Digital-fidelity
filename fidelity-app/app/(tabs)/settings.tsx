@@ -14,7 +14,6 @@ export default function SettingsScreen() {
   const { restaurant, updateRestaurant, reset } = useRestaurantStore();
   const { customers } = useCustomersStore();
   const [showGdprModal, setShowGdprModal] = useState(false);
-  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const [name, setName] = useState(restaurant?.name || '');
   const [description, setDescription] = useState(restaurant?.description || '');
@@ -147,15 +146,6 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Push Notifications */}
-      <SectionTitle title="Notifications Push" />
-      <View style={styles.card}>
-        <View style={styles.vapidRow}>
-          <Text style={styles.vapidLabel}>Clé publique VAPID</Text>
-          <Text style={styles.vapidValue} numberOfLines={2}>{restaurant?.vapid_public_key || 'Non configurée'}</Text>
-        </View>
-      </View>
-
       {/* GDPR */}
       <SectionTitle title="Conformité RGPD" />
       <View style={styles.card}>
@@ -181,26 +171,6 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </View>
-      </View>
-
-      {/* Apple Wallet */}
-      <SectionTitle title="Apple Wallet" />
-      <View style={styles.card}>
-        <View style={styles.checklist}>
-          {[
-            { done: false, text: 'Apple Developer Account (99$/an)' },
-            { done: false, text: 'Pass Type ID certificate' },
-            { done: false, text: 'APNs certificate' },
-          ].map((item, i) => (
-            <View key={i} style={styles.checklistItem}>
-              <Ionicons name={item.done ? 'checkmark-circle' : 'ellipse-outline'} size={16} color={item.done ? Colors.success : Colors.textSecondary} />
-              <Text style={styles.checklistText}>{item.text}</Text>
-            </View>
-          ))}
-        </View>
-        <TouchableOpacity style={styles.learnMoreBtn} onPress={() => setShowWalletModal(true)}>
-          <Text style={styles.learnMoreBtnText}>En savoir plus sur la mise en production</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Danger zone */}
@@ -229,20 +199,6 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* Wallet Modal */}
-      <Modal visible={showWalletModal} animationType="slide">
-        <View style={modalStyles.container}>
-          <View style={modalStyles.header}>
-            <Text style={modalStyles.title}>Mise en production Wallet</Text>
-            <TouchableOpacity onPress={() => setShowWalletModal(false)}>
-              <Text style={modalStyles.close}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={modalStyles.content}>
-            <Text style={modalStyles.text}>{walletInstructions}</Text>
-          </ScrollView>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
@@ -288,40 +244,6 @@ Pour exercer vos droits, contactez directement ${restaurantName}.
 
 6. SÉCURITÉ
 Vos données sont stockées de manière sécurisée et ne sont jamais vendues à des tiers.`;
-
-const walletInstructions = `MISE EN PRODUCTION APPLE WALLET
-
-Étape 1: Apple Developer Account
-• Inscrivez-vous sur developer.apple.com
-• Souscrivez au programme Developer (99$/an)
-
-Étape 2: Créer un Pass Type ID
-• Identifiers → + → Pass Type IDs
-• Format recommandé: pass.com.votrecommerce.fidelite
-• Téléchargez le certificat .cer
-
-Étape 3: Générer les certificats
-• Convertissez .cer en .pem via openssl
-• Téléchargez le certificat WWDR Apple
-
-Étape 4: Configuration APNs
-• Keys → + → APNs
-• Téléchargez la clé .p8
-• Notez le Key ID
-
-Étape 5: Configuration du serveur
-• Éditez backend/.env
-• Activez WALLET_LIVE_MODE=true
-• Activez PUSH_LIVE_MODE=true
-• Renseignez tous les chemins de certificats
-• Placez les fichiers dans backend/certs/
-
-Étape 6: Tests
-• Testez sur un vrai iPhone (simulateur ne supporte pas Wallet)
-• Vérifiez que la carte s'installe correctement
-• Testez les notifications push via APNs
-
-IMPORTANT: Ne commitez JAMAIS vos certificats dans git!`;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
