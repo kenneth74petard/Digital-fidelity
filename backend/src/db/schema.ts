@@ -27,7 +27,7 @@ function initSchema(db: Database.Database): void {
       description TEXT,
       color_primary TEXT NOT NULL DEFAULT '#c9a84c',
       color_secondary TEXT NOT NULL DEFAULT '#1a1a24',
-      logo_emoji TEXT NOT NULL DEFAULT '🍽️',
+      logo_emoji TEXT NOT NULL DEFAULT '🏪',
       loyalty_type TEXT NOT NULL DEFAULT 'stamps',
       stamp_goal INTEGER NOT NULL DEFAULT 10,
       points_per_visit INTEGER NOT NULL DEFAULT 100,
@@ -61,7 +61,7 @@ function initSchema(db: Database.Database): void {
       customer_id TEXT NOT NULL,
       serial_number TEXT NOT NULL UNIQUE,
       auth_token TEXT NOT NULL,
-      pass_type_id TEXT NOT NULL DEFAULT 'pass.com.votrerestaurant.fidelite',
+      pass_type_id TEXT NOT NULL DEFAULT 'pass.com.votrecommerce.fidelite',
       last_updated DATETIME NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
     );

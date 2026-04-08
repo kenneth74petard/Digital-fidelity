@@ -1,7 +1,7 @@
 {
   "name": "fidelity-backend",
   "version": "1.0.0",
-  "description": "Backend API for restaurant loyalty card app",
+  "description": "Backend API for merchant loyalty card app",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",

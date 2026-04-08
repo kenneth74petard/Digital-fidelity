@@ -82,7 +82,7 @@ function generatePassJson(data: PassData) {
 
   return {
     formatVersion: 1,
-    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || 'pass.com.votrerestaurant.fidelite',
+    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || 'pass.com.votrecommerce.fidelite',
     serialNumber: data.serialNumber,
     teamIdentifier: process.env.APPLE_TEAM_ID || 'TEAM_ID_REQUIRED',
     organizationName: data.restaurantName,
@@ -163,7 +163,7 @@ function sha1(data: string | Buffer): string {
  */
 function generateColoredPng(hexColor: string): Buffer {
   // Minimal valid PNG (1x1 pixel) placeholder
-  // TODO [PRODUCTION]: Replace with actual restaurant logo images
+  // TODO [PRODUCTION]: Replace with actual commerce logo images
   const pngHeader = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
   const width = 1;

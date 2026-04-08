@@ -15,7 +15,7 @@ router.post('/setup', (req: Request, res: Response) => {
     const scopeRestaurantId = getRestaurantScopeId(req);
     if (scopeRestaurantId) {
       return res.status(403).json({
-        error: 'Token scope restaurant: setup interdit. Utilisez un token global temporaire pour initialiser.',
+        error: 'Token scope commerce: setup interdit. Utilisez un token global temporaire pour initialiser.',
       });
     }
 
@@ -38,11 +38,11 @@ router.post('/setup', (req: Request, res: Response) => {
     const safePointsPerVisit = Number.isFinite(Number(points_per_visit)) ? Math.max(1, Math.min(10000, Number(points_per_visit))) : 100;
 
     if (!safeName) {
-      return res.status(400).json({ error: 'Le nom du restaurant est requis' });
+      return res.status(400).json({ error: 'Le nom du commerce est requis' });
     }
 
     if (safeName.length > 100) {
-      return res.status(400).json({ error: 'Le nom du restaurant est trop long' });
+      return res.status(400).json({ error: 'Le nom du commerce est trop long' });
     }
 
     const envPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -61,7 +61,7 @@ router.post('/setup', (req: Request, res: Response) => {
       safeDescription,
       color_primary || '#c9a84c',
       color_secondary || '#1a1a24',
-      logo_emoji || '🍽️',
+      logo_emoji || '🏪',
       safeLoyaltyType,
       safeStampGoal,
       safePointsPerVisit,
@@ -75,7 +75,7 @@ router.post('/setup', (req: Request, res: Response) => {
     return res.status(201).json({ data: restaurant });
   } catch (error) {
     console.error('Setup error:', error);
-    return res.status(500).json({ error: 'Erreur lors de la création du restaurant' });
+    return res.status(500).json({ error: 'Erreur lors de la création du commerce' });
   }
 });
 
@@ -84,7 +84,7 @@ router.get('/:id', (req: Request, res: Response) => {
   try {
     const scopeRestaurantId = getRestaurantScopeId(req);
     if (scopeRestaurantId && req.params.id !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
     }
 
     const db = getDb();
@@ -92,7 +92,7 @@ router.get('/:id', (req: Request, res: Response) => {
       'SELECT id, name, description, color_primary, color_secondary, logo_emoji, loyalty_type, stamp_goal, points_per_visit, vapid_public_key, created_at FROM restaurants WHERE id = ?'
     ).get(req.params.id);
     if (!restaurant) {
-      return res.status(404).json({ error: 'Restaurant non trouvé' });
+      return res.status(404).json({ error: 'Commerce non trouvé' });
     }
     return res.json({ data: restaurant });
   } catch (error) {
@@ -105,7 +105,7 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     const scopeRestaurantId = getRestaurantScopeId(req);
     if (scopeRestaurantId && req.params.id !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
     }
 
     const db = getDb();
@@ -122,7 +122,7 @@ router.put('/:id', (req: Request, res: Response) => {
 
     const existing = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(req.params.id) as any;
     if (!existing) {
-      return res.status(404).json({ error: 'Restaurant non trouvé' });
+      return res.status(404).json({ error: 'Commerce non trouvé' });
     }
 
     db.prepare(`

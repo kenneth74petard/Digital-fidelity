@@ -98,7 +98,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* Restaurant section */}
-      <SectionTitle title="Mon Restaurant" />
+      <SectionTitle title="Mon Commerce" />
       <View style={styles.card}>
         <Field label="Système de fidélité">
           <View style={styles.loyaltyRow}>
@@ -118,7 +118,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </Field>
-        <Field label="Nom du restaurant">
+        <Field label="Nom du commerce">
           <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nom..." placeholderTextColor={Colors.textSecondary} />
         </Field>
         <Field label="Description">
@@ -224,7 +224,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView style={modalStyles.content}>
-            <Text style={modalStyles.text}>{generateGdprText(restaurant?.name || 'Notre restaurant')}</Text>
+            <Text style={modalStyles.text}>{generateGdprText(restaurant?.name || 'Notre commerce')}</Text>
           </ScrollView>
         </View>
       </Modal>
@@ -297,7 +297,7 @@ const walletInstructions = `MISE EN PRODUCTION APPLE WALLET
 
 Étape 2: Créer un Pass Type ID
 • Identifiers → + → Pass Type IDs
-• Format recommandé: pass.com.votrerestaurant.fidelite
+• Format recommandé: pass.com.votrecommerce.fidelite
 • Téléchargez le certificat .cer
 
 Étape 3: Générer les certificats

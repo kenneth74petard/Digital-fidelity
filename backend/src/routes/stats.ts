@@ -10,7 +10,7 @@ router.get('/:restaurantId', (req: Request, res: Response) => {
     const scopeRestaurantId = String(req.restaurantScopeId || '').trim();
 
     if (!scopeRestaurantId || scopeRestaurantId !== restaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
+      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
     }
 
     const total_customers = (db.prepare(

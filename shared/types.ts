@@ -1,4 +1,5 @@
 // Shared TypeScript types for fidelity-app and backend
+// Note: "Restaurant" naming is kept for DB/API backwards compatibility but represents any merchant type
 
 export type LoyaltyType = 'stamps' | 'points';
 
