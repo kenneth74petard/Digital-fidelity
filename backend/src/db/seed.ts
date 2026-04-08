@@ -13,7 +13,7 @@ async function seed() {
   db.exec('DELETE FROM customers');
   db.exec('DELETE FROM restaurants');
 
-  // Create demo commerce
+  // Create demo restaurant
   const restaurantId = uuidv4();
   db.prepare(`
     INSERT INTO restaurants (id, name, description, color_primary, color_secondary, logo_emoji, stamp_goal, points_per_visit)
@@ -29,7 +29,7 @@ async function seed() {
     100
   );
 
-  console.log(`✅ Commerce créé: Le Petit Bistrot (${restaurantId})`);
+  console.log(`✅ Restaurant créé: Le Petit Bistrot (${restaurantId})`);
 
   // Create demo customers
   const customers = [
@@ -92,7 +92,7 @@ async function seed() {
 
   console.log('✅ Notifications de démo créées');
   console.log('\n🎉 Base de données initialisée avec succès!');
-  console.log(`📋 Commerce ID: ${restaurantId}`);
+  console.log(`📋 Restaurant ID: ${restaurantId}`);
   console.log('   Sauvegardez cet ID pour la configuration de la web app.');
 }
 

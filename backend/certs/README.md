@@ -16,7 +16,7 @@ ne peuvent pas être installées dans Apple Wallet, mais ont la structure correc
 ### 2. Pass Type ID
 1. Dans Certificates, Identifiers & Profiles → Identifiers
 2. Créez un nouveau **Pass Type ID**
-3. Exemple: `pass.com.votrecommerce.fidelite`
+3. Exemple: `pass.com.votrerestaurant.fidelite`
 4. Téléchargez le certificat `.cer`
 5. Convertissez en `.pem`:
    ```bash
@@ -48,14 +48,14 @@ openssl x509 -inform DER -in AppleWWDRCAG3.cer -out wwdr.pem
 WALLET_LIVE_MODE=true
 PUSH_LIVE_MODE=true
 APPLE_TEAM_ID=VOTRE_TEAM_ID
-APPLE_PASS_TYPE_ID=pass.com.votrecommerce.fidelite
+APPLE_PASS_TYPE_ID=pass.com.votrerestaurant.fidelite
 APPLE_KEY_PATH=./certs/pass.key
 APPLE_CERT_PATH=./certs/pass.pem
 APPLE_WWDR_PATH=./certs/wwdr.pem
 APNS_KEY_PATH=./certs/AuthKey_XXXXXXXXXX.p8
 APNS_KEY_ID=VOTRE_KEY_ID
 APNS_TEAM_ID=VOTRE_TEAM_ID
-APNS_TOPIC=pass.com.votrecommerce.fidelite
+APNS_TOPIC=pass.com.votrerestaurant.fidelite
 ```
 
 ### 7. Placez les fichiers dans ce dossier:

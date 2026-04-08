@@ -8,7 +8,7 @@ const router = Router();
 function getRestaurantScopeId(req: Request, res: Response): string | null {
   const scopeId = String(req.restaurantScopeId || '').trim();
   if (!scopeId) {
-    res.status(403).json({ error: 'Scope commerce introuvable pour cette requete' });
+    res.status(403).json({ error: 'Scope restaurant introuvable pour cette requete' });
     return null;
   }
   return scopeId;
@@ -28,7 +28,7 @@ router.post('/send', async (req: Request, res: Response) => {
     }
 
     if (String(restaurant_id) !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     if (title.length > 50) {
@@ -41,7 +41,7 @@ router.post('/send', async (req: Request, res: Response) => {
 
     const restaurant = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(restaurant_id) as any;
     if (!restaurant) {
-      return res.status(404).json({ error: 'Commerce non trouvé' });
+      return res.status(404).json({ error: 'Restaurant non trouvé' });
     }
 
     // Count eligible recipients
@@ -102,7 +102,7 @@ router.post('/schedule', (req: Request, res: Response) => {
     }
 
     if (String(restaurant_id) !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     if (title.length > 50) {
@@ -152,7 +152,7 @@ router.get('/:restaurantId', (req: Request, res: Response) => {
     if (!scopeRestaurantId) return;
 
     if (req.params.restaurantId !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     const db = getDb();

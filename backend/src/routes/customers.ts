@@ -12,7 +12,7 @@ function normalizeEmail(value: string): string {
 function getRestaurantScopeId(req: Request, res: Response): string | null {
   const scopeId = String(req.restaurantScopeId || '').trim();
   if (!scopeId) {
-    res.status(403).json({ error: 'Scope commerce introuvable pour cette requete' });
+    res.status(403).json({ error: 'Scope restaurant introuvable pour cette requete' });
     return null;
   }
   return scopeId;
@@ -37,7 +37,7 @@ router.get('/', (req: Request, res: Response) => {
     }
 
     if (restaurantId !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     let whereClause = `WHERE c.restaurant_id = ?`;
@@ -113,7 +113,7 @@ router.post('/', (req: Request, res: Response) => {
     }
 
     if (String(restaurant_id) !== scopeRestaurantId) {
-      return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+      return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
     }
 
     if (!EMAIL_REGEX.test(safeEmail)) {
@@ -191,12 +191,12 @@ router.post('/import', (req: Request, res: Response) => {
   }
 
   if (String(restaurant_id) !== scopeRestaurantId) {
-    return res.status(403).json({ error: 'Acces refuse a ce commerce' });
+    return res.status(403).json({ error: 'Acces refuse a ce restaurant' });
   }
 
   const db = getDb();
   const restaurant = db.prepare('SELECT id FROM restaurants WHERE id = ?').get(restaurant_id);
-  if (!restaurant) return res.status(404).json({ error: 'Commerce non trouvé' });
+  if (!restaurant) return res.status(404).json({ error: 'Restaurant non trouvé' });
 
   const results = { created: 0, duplicates: 0, errors: [] as string[] };
   const now = new Date().toISOString();

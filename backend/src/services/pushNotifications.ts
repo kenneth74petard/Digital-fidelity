@@ -49,7 +49,7 @@ export async function sendPushToSubscription(
 }
 
 /**
- * Send notification to all marketing-consented customers of a commerce
+ * Send notification to all marketing-consented customers of a restaurant
  * Returns count of successful sends
  */
 export async function sendToAllCustomers(

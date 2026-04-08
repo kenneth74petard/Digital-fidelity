@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 router.get('/:restaurantId', (req: Request, res: Response) => {
   const db = getDb();
   const restaurant = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(req.params.restaurantId) as any;
-  if (!restaurant) return res.status(404).send(errorPage('Commerce introuvable'));
+  if (!restaurant) return res.status(404).send(errorPage('Restaurant introuvable'));
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   return res.send(formPage(restaurant));
 });
@@ -34,7 +34,7 @@ router.post('/:restaurantId', (req: Request, res: Response) => {
 
   const db = getDb();
   const restaurant = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(restaurantId) as any;
-  if (!restaurant) return res.status(404).send(errorPage('Commerce introuvable'));
+  if (!restaurant) return res.status(404).send(errorPage('Restaurant introuvable'));
 
   const now = new Date().toISOString();
 
@@ -115,7 +115,7 @@ function formPage(r: any) {
   const c = safeHexColor(r.color_primary);
   const rgb = hexToRgb(c);
   const restaurantName = escapeHtml(r.name);
-  const logoEmoji = escapeHtml(r.logo_emoji || '🏪');
+  const logoEmoji = escapeHtml(r.logo_emoji || '🍽️');
   const restaurantId = encodeURIComponent(String(r.id || ''));
   const stampGoal = Math.min(Number(r.stamp_goal || 10), 10);
   return `<!DOCTYPE html>
@@ -261,7 +261,7 @@ function cardPage(r: any, customer: any, walletLiveMode: boolean) {
   const fullName = escapeHtml(`${customer.first_name} ${customer.last_name}`);
   const shortId = escapeHtml(String(customer.id || '').substring(0, 8).toUpperCase());
   const restaurantName = escapeHtml(r.name);
-  const logoEmoji = escapeHtml(r.logo_emoji || '🏪');
+  const logoEmoji = escapeHtml(r.logo_emoji || '🍽️');
   const safePoints = Number(customer.points || 0);
   const safeStamps = Math.max(0, Number(customer.stamps || 0));
   const safeCustomerId = encodeURIComponent(String(customer.id || ''));

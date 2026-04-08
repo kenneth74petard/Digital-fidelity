@@ -22,7 +22,7 @@ export default function OnboardingScreen() {
 
   const handleSetup = async () => {
     if (!name.trim()) {
-      Alert.alert('Erreur', 'Le nom du commerce est requis');
+      Alert.alert('Erreur', 'Le nom du restaurant est requis');
       return;
     }
     try {
@@ -30,7 +30,7 @@ export default function OnboardingScreen() {
       await setupRestaurant({
         name: name.trim(),
         description: description.trim() || undefined,
-        logo_emoji: '🏪',
+        logo_emoji: '🍽️',
         color_primary: '#c9a84c',
         color_secondary: '#1a1a24',
         loyalty_type: loyaltyType,
@@ -43,7 +43,7 @@ export default function OnboardingScreen() {
         setStep(2);
       }
     } catch {
-      Alert.alert('Erreur', 'Impossible de créer le commerce. Vérifiez que le serveur est démarré.');
+      Alert.alert('Erreur', 'Impossible de créer le restaurant. Vérifiez que le serveur est démarré.');
     } finally {
       setIsSubmitting(false);
     }
@@ -91,16 +91,16 @@ export default function OnboardingScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-      <Text style={styles.stepTitle}>Configurer votre commerce</Text>
+      <Text style={styles.stepTitle}>Configurer votre restaurant</Text>
       <Text style={styles.stepSub}>Ces informations apparaîtront sur les cartes de fidélité</Text>
 
       {/* Nom */}
-      <Text style={styles.label}>Nom du commerce *</Text>
+      <Text style={styles.label}>Nom du restaurant *</Text>
       <TextInput
         style={styles.input}
         value={name}
         onChangeText={setName}
-        placeholder="Ex: Salon Marie, Boulangerie Dupont..."
+        placeholder="Ex: Le Petit Bistrot"
         placeholderTextColor={Colors.textSecondary}
       />
 
@@ -109,7 +109,7 @@ export default function OnboardingScreen() {
         style={[styles.input, styles.textArea]}
         value={description}
         onChangeText={setDescription}
-        placeholder="Ex: Coiffure, boulangerie, restaurant..."
+        placeholder="Ex: Cuisine française traditionnelle"
         placeholderTextColor={Colors.textSecondary}
         multiline
       />
@@ -186,7 +186,7 @@ export default function OnboardingScreen() {
       >
         {isSubmitting
           ? <ActivityIndicator color="#000" />
-          : <Text style={styles.primaryBtnText}>Créer mon commerce</Text>
+          : <Text style={styles.primaryBtnText}>Créer mon restaurant</Text>
         }
       </TouchableOpacity>
     </ScrollView>
