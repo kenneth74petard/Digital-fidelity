@@ -3,31 +3,12 @@ export type ThemeMode = 'dark' | 'light';
 const THEME_STORAGE_KEY = 'fidelity:theme-mode';
 
 const DarkColors = {
-  background: '#0f0f14',
-  card: '#1a1a24',
-  cardBorder: 'rgba(255,255,255,0.08)',
-  gold: '#c9a84c',
-  goldLight: '#e5c97a',
-  textPrimary: '#f5f0e8',
-  textSecondary: 'rgba(255,255,255,0.5)',
-  textMuted: 'rgba(255,255,255,0.3)',
-  success: '#4CAF50',
-  error: '#f44336',
-  warning: '#FF9800',
-  info: '#2196F3',
-  border: 'rgba(255,255,255,0.08)',
-  overlay: 'rgba(0,0,0,0.8)',
-  tabBar: '#13131c',
-  inputBg: '#252535',
-};
-
-const LightColors = {
-  background: '#f6f4ef',
-  card: '#ffffff',
+  background: '#ffffff',
+  card: '#f9f9fc',
   cardBorder: 'rgba(0,0,0,0.08)',
-  gold: '#9b7d2f',
-  goldLight: '#b79237',
-  textPrimary: '#1f1f25',
+  gold: '#ffb800',
+  goldLight: '#ffd54f',
+  textPrimary: '#1a1c1e',
   textSecondary: 'rgba(0,0,0,0.55)',
   textMuted: 'rgba(0,0,0,0.35)',
   success: '#2e7d32',
@@ -36,8 +17,27 @@ const LightColors = {
   info: '#1565c0',
   border: 'rgba(0,0,0,0.1)',
   overlay: 'rgba(0,0,0,0.4)',
-  tabBar: '#ece8df',
-  inputBg: '#f2eee4',
+  tabBar: '#ffffff',
+  inputBg: '#f3f3f6',
+};
+
+const LightColors = {
+  background: '#ffffff',
+  card: '#f9f9fc',
+  cardBorder: 'rgba(0,0,0,0.08)',
+  gold: '#ffb800',
+  goldLight: '#ffd54f',
+  textPrimary: '#1a1c1e',
+  textSecondary: 'rgba(0,0,0,0.55)',
+  textMuted: 'rgba(0,0,0,0.35)',
+  success: '#2e7d32',
+  error: '#c62828',
+  warning: '#ef6c00',
+  info: '#1565c0',
+  border: 'rgba(0,0,0,0.1)',
+  overlay: 'rgba(0,0,0,0.4)',
+  tabBar: '#ffffff',
+  inputBg: '#f3f3f6',
 };
 
 function readInitialThemeMode(): ThemeMode {
@@ -103,10 +103,10 @@ export const Typography = {
   },
 };
 
-export const FOOD_EMOJIS = ['🍽️', '🥐', '🍕', '🍔', '🍣', '🥗', '🍜', '🥩', '🍰', '☕', '🍷', '🍺', '🥂', '🌮', '🍱', '🥘', '🍲', '🧆', '🥞', '🫕'];
+export const FOOD_EMOJIS = ['🏪', '🥐', '🍕', '🍔', '🍣', '🥗', '🍜', '🥩', '🍰', '☕', '💇', '🌸', '🥂', '🌮', '🍱', '🥘', '🍲', '🧆', '🥞', '🫕'];
 
 export const PRESET_COLORS = [
-  '#c9a84c', // Gold
+  '#ffb800', // Gold
   '#e63946', // Red
   '#2a9d8f', // Teal
   '#457b9d', // Blue

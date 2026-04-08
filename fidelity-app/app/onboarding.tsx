@@ -31,8 +31,8 @@ export default function OnboardingScreen() {
         name: name.trim(),
         description: description.trim() || undefined,
         logo_emoji: '🏪',
-        color_primary: '#c9a84c',
-        color_secondary: '#1a1a24',
+        color_primary: '#ffb800',
+        color_secondary: '#ffffff',
         loyalty_type: loyaltyType,
         stamp_goal: stampGoal,
         points_per_visit: pointsPerVisit,
@@ -54,7 +54,7 @@ export default function OnboardingScreen() {
       <View style={styles.container}>
         <View style={styles.center}>
           <Ionicons name="trophy" size={72} color={Colors.gold} style={{ marginBottom: Spacing.lg }} />
-          <Text style={styles.title}>FidélitéPro</Text>
+          <Text style={styles.title}>UP Fidelity</Text>
           <Text style={styles.tagline}>Fidélisez vos clients</Text>
           <Text style={styles.desc}>
             Créez votre programme de fidélité, gérez vos clients et envoyez des notifications push directement depuis votre navigateur.

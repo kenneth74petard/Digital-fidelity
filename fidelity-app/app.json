@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "FidélitéPro",
+    "name": "UP Fidelity",
     "slug": "fidelity-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#0f0f14"
+      "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -32,7 +32,7 @@
       [
         "expo-notifications",
         {
-          "color": "#c9a84c"
+          "color": "#ffb800"
         }
       ]
     ],

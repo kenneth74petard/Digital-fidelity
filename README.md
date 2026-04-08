@@ -1,4 +1,4 @@
-# FidélitéPro — Web app de gestion de cartes de fidélité
+# UP Fidelity — Web app de gestion de cartes de fidélité
 
 Solution web complète de gestion de programme de fidélité pour commerces de proximité (restaurants, salons de coiffure, boulangeries, etc.), avec backend Node.js et interface web Expo (React).
 

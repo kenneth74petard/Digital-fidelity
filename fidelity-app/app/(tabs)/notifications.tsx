@@ -182,7 +182,7 @@ function SendTab({
             </View>
             <View style={styles.notifContent}>
               <View style={styles.notifHeader}>
-                <Text style={styles.notifAppName}>FidélitéPro</Text>
+                <Text style={styles.notifAppName}>UP Fidelity</Text>
                 <Text style={styles.notifTime}>maintenant</Text>
               </View>
               <Text style={styles.notifTitle} numberOfLines={1}>
