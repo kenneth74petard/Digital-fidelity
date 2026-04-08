@@ -147,6 +147,7 @@ export default function DashboardScreen() {
           <CameraView
             style={scannerStyles.camera}
             facing="back"
+            {...({type: "back"} as any)}
             barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             onBarcodeScanned={handleBarCodeScanned}
           />
