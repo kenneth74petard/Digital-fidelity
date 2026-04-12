@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UP Fidelity — La fidélité réinventée</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed-dim": "#17d8ff",
+                    "primary-container": "#ffb800",
+                    "secondary": "#775a20",
+                    "on-tertiary-fixed-variant": "#004e5d",
+                    "on-secondary-fixed-variant": "#5d4208",
+                    "secondary-container": "#fdd48e",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#edeef1",
+                    "secondary-fixed-dim": "#e8c17c",
+                    "on-primary": "#ffffff",
+                    "background": "#f9f9fc",
+                    "error": "#ba1a1a",
+                    "outline": "#837560",
+                    "on-background": "#1a1c1e",
+                    "on-error": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface": "#f9f9fc",
+                    "outline-variant": "#d5c4ab",
+                    "surface-bright": "#f9f9fc",
+                    "tertiary-fixed": "#b0ecff",
+                    "tertiary-container": "#00d7fe",
+                    "inverse-on-surface": "#f0f0f3",
+                    "secondary-fixed": "#ffdea8",
+                    "inverse-surface": "#2f3133",
+                    "on-surface-variant": "#514532",
+                    "on-secondary": "#ffffff",
+                    "surface-tint": "#7c5800",
+                    "tertiary": "#00687b",
+                    "surface-container-high": "#e8e8eb",
+                    "on-primary-fixed-variant": "#5e4200",
+                    "primary": "#7c5800",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed-dim": "#ffba20",
+                    "primary-fixed": "#ffdea8",
+                    "on-secondary-container": "#785a20",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#ffba20",
+                    "surface-container-highest": "#e2e2e5",
+                    "on-secondary-fixed": "#271900",
+                    "on-primary-container": "#6b4c00",
+                    "on-surface": "#1a1c1e",
+                    "on-tertiary-container": "#005a6b",
+                    "surface-dim": "#d9dadd",
+                    "surface-container-low": "#f3f3f6",
+                    "on-primary-fixed": "#271900",
+                    "surface-variant": "#e2e2e5",
+                    "on-tertiary-fixed": "#001f27"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .amber-glow {
+        box-shadow: 0 12px 32px -4px rgba(124, 88, 0, 0.06);
+      }
+      .glass-header {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+      }
+      .pass-shadow {
+        box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 glass-header border-b border-surface-container-high">
+<div class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+<div class="text-2xl font-black tracking-tight text-slate-900 font-headline">UP Fidelity</div>
+<nav class="hidden md:flex gap-8 items-center">
+<a data-nav="features" class="nav-link text-amber-600 font-bold border-b-2 border-amber-500 pb-1 font-headline cursor-pointer" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth',block:'start'})">Features</a>
+<a data-nav="pricing" class="nav-link text-slate-600 hover:text-amber-500 transition-colors font-headline cursor-pointer" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth',block:'start'})">Pricing</a>
+<a data-nav="bento" class="nav-link text-slate-600 hover:text-amber-500 transition-colors font-headline cursor-pointer" onclick="document.getElementById('bento').scrollIntoView({behavior:'smooth',block:'start'})">Pour qui ?</a>
+</nav>
+<a href="/contact" class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-xl font-bold hover:bg-gradient-to-r hover:from-primary-container hover:to-inverse-primary transition-all duration-300 inline-block">
+            Nous contacter
+        </a>
+</div>
+</header>
+<main class="pt-24">
+<!-- Hero Section -->
+<section class="relative overflow-hidden px-6 pt-16 pb-24 md:pt-32 md:pb-40">
+<div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<div class="space-y-8">
+<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary-fixed text-on-secondary-fixed text-sm font-bold tracking-wide uppercase">
+<span class="material-symbols-outlined text-sm" data-icon="stars" style='font-variation-settings: "FILL" 1;'>stars</span>
+                    Le Partenaire des Commerçants
+                </div>
+<h1 class="font-headline text-5xl md:text-7xl font-extrabold text-on-surface leading-[1.1] tracking-tight">
+                    La fidélité <br/><span class="text-primary-container">réinventée.</span>
+</h1>
+<p class="text-on-surface-variant text-lg md:text-xl max-w-lg leading-relaxed">
+                    Transformez votre carte de fidélité numérique en un accessoire lifestyle premium. Une expérience exclusive pour vos clients les plus précieux.
+                </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<a href="/contact" class="px-8 py-4 bg-primary-container text-on-primary-container rounded-xl font-bold text-lg amber-glow hover:scale-[1.02] transition-transform inline-block">
+                        Démarrer maintenant
+                    </a>
+<a href="/contact" class="px-8 py-4 bg-transparent border border-outline-variant/30 text-primary rounded-xl font-bold text-lg hover:bg-surface-container-low transition-colors inline-block">
+                        Voir la démo
+                    </a>
+</div>
+</div>
+<div class="relative flex justify-center items-start pt-12 md:pt-0">
+<div class="absolute -top-20 -right-20 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl"></div>
+<div class="relative z-10 w-full max-w-[450px] transform rotate-[1deg] hover:rotate-0 transition-transform duration-700">
+<img alt="UP Fidelity Mobile Pass" class="w-full h-auto drop-shadow-[0_35px_35px_rgba(0,0,0,0.15)] rounded-[3rem]" src="https://lh3.googleusercontent.com/aida/ADBb0ugT8hmfk6uvV9T5vh6bpKhON2mxvsCy8MabfiMzIdflhbtgtXq64bG12M8NnK4m9y4lETrPAWu7V9mvOaZ7aj59YkNLb-WW5GMNHsbG8QoL2uhlXT0TxI5J8yj_gKZnyT2x_LpUGTdmJ-lWEKMS7XD7xm5Uf4B9Yla0ZhJ4fOBnuVonKRQa8wTsC1Ksww46OTLMWF3wzVSqdKSGn-ZMhdA8W-zRa7jincnLz3wtZLfqkU0Yw4xhr1hnlubmCiw1UlUpyVvYqfVZSsQ"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Unified Features & Pricing Section -->
+<section class="py-24 px-6 bg-white" id="features">
+<div class="max-w-7xl mx-auto">
+<div class="mb-16 space-y-4">
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold tracking-tight">Une technologie <span class="text-primary-container">puissante.</span></h2>
+<p class="text-on-surface-variant max-w-2xl text-lg">Tout ce dont vous avez besoin pour digitaliser et automatiser la fidélisation de vos clients dans un seul écosystème élégant.</p>
+</div>
+<div class="bg-surface-container-lowest border border-surface-variant/50 rounded-[3rem] p-8 md:p-16 amber-glow mb-16">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-16">
+<!-- Feature 1 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="style" style='font-variation-settings: "FILL" 1;'>style</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Cartes illimitées</h3>
+<p class="text-on-surface-variant leading-relaxed">Générez autant de passes numériques que nécessaire, sans surcoût ni limite de croissance.</p>
+</div>
+<!-- Feature 2 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="dashboard" style='font-variation-settings: "FILL" 1;'>dashboard</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Tableau de bord</h3>
+<p class="text-on-surface-variant leading-relaxed">Suivez vos performances en temps réel avec des indicateurs clairs sur l'engagement client.</p>
+</div>
+<!-- Feature 3 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="notifications_active" style='font-variation-settings: "FILL" 1;'>notifications_active</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Notifications push</h3>
+<p class="text-on-surface-variant leading-relaxed">Communiquez directement sur l'écran de verrouillage de vos clients pour vos offres spéciales.</p>
+</div>
+<!-- Feature 4 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="group" style='font-variation-settings: "FILL" 1;'>group</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Gestion clients</h3>
+<p class="text-on-surface-variant leading-relaxed">Base de données centralisée avec outils de recherche avancés pour mieux connaître vos habitués.</p>
+</div>
+<!-- Feature 5 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="auto_fix_high" style='font-variation-settings: "FILL" 1;'>auto_fix_high</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Récompenses auto</h3>
+<p class="text-on-surface-variant leading-relaxed">Distribution automatique des tampons et des récompenses selon vos propres règles de gestion.</p>
+</div>
+<!-- Feature 6 -->
+<div class="space-y-4">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="account_balance_wallet" style='font-variation-settings: "FILL" 1;'>account_balance_wallet</span>
+</div>
+<h3 class="font-headline text-xl font-bold">Apple Wallet</h3>
+<p class="text-on-surface-variant leading-relaxed">Compatibilité native avec Apple Wallet et Google Pay pour une accessibilité maximale sans application.</p>
+</div>
+<!-- Feature 7 -->
+<div class="space-y-4 md:col-span-2 lg:col-span-2">
+<div class="w-14 h-14 bg-primary-container rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" data-icon="qr_code_2" style='font-variation-settings: "FILL" 1;'>qr_code_2</span>
+</div>
+<h3 class="font-headline text-xl font-bold">QR codes intégrés</h3>
+<p class="text-on-surface-variant leading-relaxed max-w-md">Scannez instantanément les cartes de vos clients au comptoir pour valider les visites et les offres.</p>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch" id="pricing">
+<!-- Mensuel Plan -->
+<div class="bg-surface-container-low rounded-[2rem] p-10 flex flex-col items-center text-center amber-glow transition-transform hover:-translate-y-2 border border-surface-variant/20">
+<div class="space-y-6 flex-grow">
+<div class="flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim text-4xl" data-icon="calendar_today">calendar_today</span>
+<h3 class="font-headline text-2xl font-bold">Mensuel</h3>
+</div>
+<div class="flex items-baseline justify-center">
+<span class="text-6xl font-headline font-black">30€</span>
+<span class="text-on-surface-variant font-medium ml-1">/mois</span>
+</div>
+</div>
+<a href="/contact" class="mt-12 w-full py-4 rounded-2xl border-2 border-primary-container text-primary font-bold hover:bg-primary-container hover:text-on-primary-container transition-all duration-300 inline-block text-center">
+                    S'abonner
+                </a>
+</div>
+<!-- Trimestriel Plan (Featured) -->
+<div class="bg-primary-container rounded-[2rem] p-10 flex flex-col items-center text-center relative overflow-hidden shadow-2xl transition-transform hover:-translate-y-2 border-4 border-on-primary-container/10">
+<div class="absolute top-0 right-0 p-4">
+<div class="bg-on-primary-container text-primary-container px-4 py-1 rounded-full text-xs font-black uppercase tracking-tighter">Populaire</div>
+</div>
+<div class="space-y-6 flex-grow relative z-10">
+<div class="flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-on-primary-container text-4xl" data-icon="auto_awesome" style='font-variation-settings: "FILL" 1;'>auto_awesome</span>
+<h3 class="font-headline text-2xl font-bold text-on-primary-container">Trimestriel</h3>
+</div>
+<div class="flex items-baseline justify-center text-on-primary-container">
+<span class="text-6xl font-headline font-black">80€</span>
+<span class="text-on-primary-container/70 font-medium ml-1">/3 mois</span>
+</div>
+</div>
+<a href="/contact" class="mt-12 w-full py-4 bg-on-primary-container text-primary-container rounded-2xl font-black text-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg inline-block text-center">
+                    Choisir ce plan
+                </a>
+</div>
+<!-- Annuel Plan -->
+<div class="bg-surface-container-low rounded-[2rem] p-10 flex flex-col items-center text-center amber-glow transition-transform hover:-translate-y-2 border border-surface-variant/20">
+<div class="space-y-6 flex-grow">
+<div class="flex flex-col items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim text-4xl" data-icon="workspace_premium" style='font-variation-settings: "FILL" 1;'>workspace_premium</span>
+<h3 class="font-headline text-2xl font-bold">Annuel</h3>
+</div>
+<div class="flex items-baseline justify-center">
+<span class="text-6xl font-headline font-black">300€</span>
+<span class="text-on-surface-variant font-medium ml-1">/an</span>
+</div>
+</div>
+<a href="/contact" class="mt-12 w-full py-4 rounded-2xl border-2 border-primary-container text-primary font-bold hover:bg-primary-container hover:text-on-primary-container transition-all duration-300 inline-block text-center">
+                    S'abonner
+                </a>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Showcase -->
+<section id="bento" class="py-24 max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-surface-container rounded-[2.5rem] p-10 flex flex-col justify-end relative overflow-hidden group min-h-[400px]">
+<img alt="Atmosphère chaleureuse de commerce" class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKQZyRu7QQN5kNuEnCAfi4bnLamXi-zVL5uHNcFJrCV4vOkrpkcZ-rDB5f5M5CAV10q4Xm9AmRoLztBBy30VKpqfNPcoAuTZkHZadjBC7LusKy5crTSDKb7oYHE3Hs1UuJmrHWdTBH_UuV-WhN_XmzZd49yFpes3FLxuX1zZpEXZuc_JrpP7ATmYM3nFbJS_o-PwWcM16XtdzICmR5azQDAe990fOKg7VLrZkrMyhPkZ3YunBAlZxEuTNcIU-PTM8meixO5T-vynXv"/>
+<div class="relative z-10 space-y-4">
+<h3 class="font-headline text-3xl font-bold">Fidélisez vos habitués en toute simplicité.</h3>
+<p class="text-on-surface-variant max-w-sm">Que vous soyez coiffeur, boulanger, restaurateur ou fleuriste, créez un lien durable avec vos clients. La carte numérique devient leur sésame pour des moments de convivialité privilégiés chez vous.</p>
+</div>
+</div>
+<div class="bg-secondary-container rounded-[2.5rem] p-10 flex flex-col justify-center">
+<div class="flex items-center justify-between mb-8">
+<p class="text-4xl font-headline font-black text-on-secondary-container">Performance</p>
+<span class="material-symbols-outlined text-6xl text-on-secondary-container/20" data-icon="trending_up">trending_up</span>
+</div>
+<ul class="space-y-6">
+<li class="flex items-center gap-4 text-on-secondary-container text-lg font-bold">
+<span class="material-symbols-outlined text-2xl">add_task</span>
+                    Augmentation de la rétention client
+                </li>
+<li class="flex items-center gap-4 text-on-secondary-container text-lg font-bold">
+<span class="material-symbols-outlined text-2xl">payments</span>
+                    Boost du chiffre d'affaires
+                </li>
+<li class="flex items-center gap-4 text-on-secondary-container text-lg font-bold">
+<span class="material-symbols-outlined text-2xl">notifications_active</span>
+                    Envoi de notifications push directes
+                </li>
+</ul>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-slate-200 bg-slate-50">
+<div class="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-8">
+<div class="font-headline font-bold text-slate-900 text-xl">UP Fidelity</div>
+<div class="flex gap-8">
+<a class="text-slate-500 hover:text-amber-600 transition-colors font-body text-sm" href="/privacy">Privacy Policy</a>
+<a class="text-slate-500 hover:text-amber-600 transition-colors font-body text-sm" href="/terms">Terms of Service</a>
+<a class="text-slate-500 hover:text-amber-600 transition-colors font-body text-sm" href="/contact">Contact Us</a>
+</div>
+<div class="text-slate-500 font-body text-sm">
+            &copy; 2026 UP Fidelity. All rights reserved.
+        </div>
+</div>
+</footer>
+<script>
+(function(){
+  const sections = document.querySelectorAll('#features, #pricing, #bento');
+  const links = document.querySelectorAll('.nav-link');
+  const activeClass = ['text-amber-600','font-bold','border-b-2','border-amber-500','pb-1'];
+  const inactiveClass = ['text-slate-600'];
+
+  function activate(id){
+    links.forEach(l => {
+      l.classList.remove(...activeClass);
+      l.classList.add(...inactiveClass);
+      if(l.dataset.nav === id){
+        l.classList.remove(...inactiveClass);
+        l.classList.add(...activeClass);
+      }
+    });
+  }
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting) activate(e.target.id);
+    });
+  }, { rootMargin: '-40% 0px -40% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+})();
+</script>
+</body></html>
