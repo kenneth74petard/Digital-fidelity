@@ -8,6 +8,7 @@ node_modules/
 # Build outputs
 fidelity-app/dist/       ← build Vercel (généré automatiquement)
 backend/dist/            ← build TypeScript compilé
+backend/public/          ← build Expo web (généré, ne pas committer)
 
 # Apple certificates — NEVER commit these!
 *.pem
