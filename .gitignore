@@ -1,10 +1,13 @@
 node_modules/
-dist/
 *.js.map
 .env
 *.db
 *.db-shm
 *.db-wal
+
+# Build outputs
+fidelity-app/dist/       ← build Vercel (généré automatiquement)
+backend/dist/            ← build TypeScript compilé
 
 # Apple certificates — NEVER commit these!
 *.pem

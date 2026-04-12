@@ -1,17 +1,19 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Sur le web, utiliser des URLs relatives (le frontend et l'API sont servis depuis le même serveur)
-// Sur mobile natif, utiliser la variable d'environnement
+// Résolution de l'URL du backend :
+// 1. Variable d'env EXPO_PUBLIC_API_URL (Vercel dashboard, .env, mobile)
+// 2. Sur web sans env → URLs relatives (quand frontend + backend sur même serveur)
+// 3. Fallback localhost pour le dev local
 function getBaseUrl(): string {
-  // On web, always use relative URLs — Vercel rewrites proxy /api/* to the backend
-  if (typeof window !== 'undefined' && window.location) {
-    return '';
-  }
-
   const envUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
   if (envUrl) {
     return envUrl;
+  }
+
+  // On web, use relative URLs — Vercel rewrites proxy /api/* to the backend
+  if (typeof window !== 'undefined' && window.location) {
+    return '';
   }
 
   return 'http://localhost:3000';
@@ -29,7 +31,7 @@ function extractRestaurantIdFromConfig(config: any): string {
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 8000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -47,6 +49,17 @@ api.interceptors.request.use(async (config) => {
 
   return config;
 });
+
+// Intercepteur global : log les erreurs réseau clairement
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (!err.response) {
+      console.warn('[API] Backend inaccessible. Vérifiez EXPO_PUBLIC_API_URL ou que le serveur tourne.');
+    }
+    return Promise.reject(err);
+  }
+);
 
 // Restaurant
 export const restaurantApi = {

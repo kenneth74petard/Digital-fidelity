@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "buildCommand": "cd fidelity-app && npm install --legacy-peer-deps && npx expo export --platform web",
+  "outputDirectory": "fidelity-app/dist",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/((?!_expo|assets|favicon\\.ico|robots\\.txt).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/_expo/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
