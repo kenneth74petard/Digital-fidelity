@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Platform,
+  ScrollView, Alert, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 // DateTimePicker only works on native — use text input fallback on web
@@ -11,8 +11,9 @@ const DateTimePicker = Platform.OS !== 'web'
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useNotificationsStore } from '../../stores/notificationsStore';
 import { useCustomersStore } from '../../stores/customersStore';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { Notification, NotificationType } from '../../../shared/types';
+import { ScreenHeader, Button, EmptyState, Badge } from '../../components/ui';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -41,17 +42,16 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
-      </View>
+      <ScreenHeader title="Notifications" />
 
-      {/* Tabs */}
+      {/* Onglets */}
       <View style={styles.tabsBar}>
         {(['send', 'schedule', 'history'] as TabType[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab === 'send' ? 'Envoyer' : tab === 'schedule' ? 'Planifier' : 'Historique'}
@@ -61,7 +61,7 @@ export default function NotificationsScreen() {
       </View>
 
       {activeTab === 'send' && (
-        <SendTab restaurantId={restaurant?.id || ''} restaurantName={restaurant?.name || ''} marketingCount={marketingCount} />
+        <SendTab restaurantId={restaurant?.id || ''} marketingCount={marketingCount} />
       )}
       {activeTab === 'schedule' && (
         <ScheduleTab restaurantId={restaurant?.id || ''} scheduled={scheduled} />
@@ -71,11 +71,31 @@ export default function NotificationsScreen() {
   );
 }
 
+function TypeSelector({ value, onChange }: { value: NotificationType; onChange: (t: NotificationType) => void }) {
+  return (
+    <View style={styles.typeRow}>
+      {NOTIF_TYPES.map(({ type: t, icon, label }) => {
+        const active = value === t;
+        return (
+          <TouchableOpacity
+            key={t}
+            style={[styles.typeChip, active && styles.typeChipActive]}
+            onPress={() => onChange(t)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name={icon} size={19} color={active ? Colors.goldDark : Colors.textSecondary} />
+            <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>{label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 function SendTab({
-  restaurantId, restaurantName, marketingCount,
+  restaurantId, marketingCount,
 }: {
   restaurantId: string;
-  restaurantName: string;
   marketingCount: number;
 }) {
   const [type, setType] = useState<NotificationType>('general');
@@ -119,23 +139,11 @@ function SendTab({
   };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg }} showsVerticalScrollIndicator={false}>
-      {/* Type selector */}
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingTop: Spacing.xs }} showsVerticalScrollIndicator={false}>
       <Text style={styles.fieldLabel}>Type de notification</Text>
-      <View style={styles.typeRow}>
-        {NOTIF_TYPES.map(({ type: t, icon, label }) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.typeChip, type === t && styles.typeChipActive]}
-            onPress={() => setType(t)}
-          >
-            <Ionicons name={icon} size={20} color={type === t ? '#000' : Colors.textSecondary} />
-            <Text style={[styles.typeLabel, type === t && styles.typeLabelActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <TypeSelector value={type} onChange={setType} />
 
-      {/* Title */}
+      {/* Titre */}
       <View style={styles.fieldRow}>
         <Text style={styles.fieldLabel}>Titre (max 50 caractères)</Text>
         <Text style={[styles.charCount, title.length > 45 && { color: Colors.error }]}>
@@ -147,10 +155,10 @@ function SendTab({
         value={title}
         onChangeText={(t) => setTitle(t.slice(0, 50))}
         placeholder="Ex: Menu du jour disponible !"
-        placeholderTextColor={Colors.textSecondary}
+        placeholderTextColor={Colors.textMuted}
       />
 
-      {/* Body */}
+      {/* Message */}
       <View style={styles.fieldRow}>
         <Text style={styles.fieldLabel}>Message (max 150 caractères)</Text>
         <Text style={[styles.charCount, body.length > 140 && { color: Colors.error }]}>
@@ -162,56 +170,53 @@ function SendTab({
         value={body}
         onChangeText={(t) => setBody(t.slice(0, 150))}
         placeholder="Découvrez notre sélection de ce midi..."
-        placeholderTextColor={Colors.textSecondary}
+        placeholderTextColor={Colors.textMuted}
         multiline
         numberOfLines={3}
         textAlignVertical="top"
       />
 
-      {/* iPhone lock screen preview */}
+      {/* Aperçu écran verrouillé */}
       <Text style={styles.fieldLabel}>Aperçu sur l'écran de verrouillage</Text>
-      <View style={styles.lockscreenPreview}>
-        <View style={styles.lockscreenBg}>
-          <View style={styles.lockscreenTime}>
-            <Text style={styles.lockscreenClock}>9:41</Text>
-            <Text style={styles.lockscreenDateText}>Vendredi 4 avril</Text>
+      <View style={styles.lockscreenBg}>
+        <View style={styles.lockscreenTime}>
+          <Text style={styles.lockscreenClock}>9:41</Text>
+          <Text style={styles.lockscreenDateText}>{format(new Date(), 'EEEE d MMMM', { locale: fr })}</Text>
+        </View>
+        <View style={styles.notifBubble}>
+          <View style={styles.notifAppIcon}>
+            <Ionicons name="trophy" size={20} color={Colors.onGold} />
           </View>
-          <View style={styles.notifBubble}>
-            <View style={styles.notifAppIcon}>
-              <Ionicons name="trophy" size={20} color="#000" />
+          <View style={styles.notifContent}>
+            <View style={styles.notifHeader}>
+              <Text style={styles.notifAppName}>UP Fidelity</Text>
+              <Text style={styles.notifTime}>maintenant</Text>
             </View>
-            <View style={styles.notifContent}>
-              <View style={styles.notifHeader}>
-                <Text style={styles.notifAppName}>UP Fidelity</Text>
-                <Text style={styles.notifTime}>maintenant</Text>
-              </View>
-              <Text style={styles.notifTitle} numberOfLines={1}>
-                {title || 'Titre de la notification'}
-              </Text>
-              <Text style={styles.notifBody} numberOfLines={2}>
-                {body || 'Votre message apparaîtra ici...'}
-              </Text>
-            </View>
+            <Text style={styles.notifTitle} numberOfLines={1}>
+              {title || 'Titre de la notification'}
+            </Text>
+            <Text style={styles.notifBody} numberOfLines={2}>
+              {body || 'Votre message apparaîtra ici...'}
+            </Text>
           </View>
         </View>
       </View>
 
       <View style={styles.recipientsInfo}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="mail-outline" size={14} color={Colors.textSecondary} />
-          <Text style={styles.recipientsText}>
-            Sera envoyé à <Text style={styles.recipientsCount}>{marketingCount}</Text> client(s) avec consentement marketing
-          </Text>
-        </View>
+        <Ionicons name="people-outline" size={15} color={Colors.goldDark} />
+        <Text style={styles.recipientsText}>
+          Sera envoyé à <Text style={styles.recipientsCount}>{marketingCount}</Text> client(s) avec consentement marketing
+        </Text>
       </View>
 
-      <TouchableOpacity
-        style={[styles.sendButton, (sending || !title || !body) && { opacity: 0.5 }]}
+      <Button
+        label="Envoyer maintenant"
+        icon="paper-plane"
         onPress={handleSend}
-        disabled={sending || !title || !body}
-      >
-        {sending ? <ActivityIndicator color="#000" /> : <Text style={styles.sendButtonText}>Envoyer maintenant</Text>}
-      </TouchableOpacity>
+        loading={sending}
+        disabled={!title || !body}
+        style={{ marginBottom: Spacing.xl }}
+      />
     </ScrollView>
   );
 }
@@ -255,25 +260,14 @@ function ScheduleTab({
   };
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg }} showsVerticalScrollIndicator={false}>
-      <View style={styles.typeRow}>
-        {NOTIF_TYPES.map(({ type: t, icon, label }) => (
-          <TouchableOpacity
-            key={t}
-            style={[styles.typeChip, type === t && styles.typeChipActive]}
-            onPress={() => setType(t)}
-          >
-            <Ionicons name={icon} size={20} color={type === t ? '#000' : Colors.textSecondary} />
-            <Text style={[styles.typeLabel, type === t && styles.typeLabelActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingTop: Spacing.xs }} showsVerticalScrollIndicator={false}>
+      <TypeSelector value={type} onChange={setType} />
 
       <Text style={styles.fieldLabel}>Titre</Text>
-      <TextInput style={styles.input} value={title} onChangeText={(t) => setTitle(t.slice(0, 50))} placeholder="Titre..." placeholderTextColor={Colors.textSecondary} />
+      <TextInput style={styles.input} value={title} onChangeText={(t) => setTitle(t.slice(0, 50))} placeholder="Titre..." placeholderTextColor={Colors.textMuted} />
 
       <Text style={styles.fieldLabel}>Message</Text>
-      <TextInput style={[styles.input, styles.textArea]} value={body} onChangeText={(t) => setBody(t.slice(0, 150))} placeholder="Message..." placeholderTextColor={Colors.textSecondary} multiline textAlignVertical="top" />
+      <TextInput style={[styles.input, styles.textArea]} value={body} onChangeText={(t) => setBody(t.slice(0, 150))} placeholder="Message..." placeholderTextColor={Colors.textMuted} multiline textAlignVertical="top" />
 
       <Text style={styles.fieldLabel}>Date et heure d'envoi</Text>
       {Platform.OS === 'web' ? (
@@ -285,17 +279,15 @@ function ScheduleTab({
             if (!isNaN(d.getTime())) setScheduledDate(d);
           }}
           placeholder="YYYY-MM-DDTHH:MM"
-          placeholderTextColor={Colors.textSecondary}
+          placeholderTextColor={Colors.textMuted}
         />
       ) : (
         <>
           <TouchableOpacity style={styles.datePicker} onPress={() => setShowDatePicker(true)}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
-              <Text style={styles.datePickerText}>
-                {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
-              </Text>
-            </View>
+            <Ionicons name="calendar-outline" size={16} color={Colors.goldDark} />
+            <Text style={styles.datePickerText}>
+              {format(scheduledDate, "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr })}
+            </Text>
           </TouchableOpacity>
           {showDatePicker && DateTimePicker && (
             <DateTimePicker
@@ -307,23 +299,23 @@ function ScheduleTab({
                 if (date) setScheduledDate(date);
               }}
               display="spinner"
-              themeVariant="dark"
             />
           )}
         </>
       )}
 
-      <TouchableOpacity
-        style={[styles.sendButton, (submitting || !title || !body) && { opacity: 0.5 }]}
+      <Button
+        label="Planifier"
+        icon="time-outline"
         onPress={handleSchedule}
-        disabled={submitting || !title || !body}
-      >
-        {submitting ? <ActivityIndicator color="#000" /> : <Text style={styles.sendButtonText}>Planifier</Text>}
-      </TouchableOpacity>
+        loading={submitting}
+        disabled={!title || !body}
+        style={{ marginBottom: Spacing.lg }}
+      />
 
       {scheduled.length > 0 && (
         <>
-          <Text style={[styles.fieldLabel, { marginTop: Spacing.xl }]}>Notifications planifiées</Text>
+          <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Notifications planifiées</Text>
           {scheduled.map((n) => (
             <NotifItem key={n.id} notification={n} onCancel={() => {
               Alert.alert('Annuler ?', 'Voulez-vous annuler cette notification planifiée ?', [
@@ -342,15 +334,17 @@ function HistoryTab({ notifications }: { notifications: Notification[] }) {
   if (notifications.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="mail-unread-outline" size={64} color={Colors.textSecondary} style={{ marginBottom: Spacing.lg }} />
-        <Text style={styles.emptyTitle}>Aucun historique</Text>
-        <Text style={styles.emptySubtitle}>Les notifications envoyées apparaîtront ici</Text>
+        <EmptyState
+          icon="mail-unread-outline"
+          title="Aucun historique"
+          subtitle="Les notifications envoyées apparaîtront ici"
+        />
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: 100 }}>
       {notifications.map((n) => (
         <NotifItem key={n.id} notification={n} />
       ))}
@@ -361,28 +355,20 @@ function HistoryTab({ notifications }: { notifications: Notification[] }) {
 function NotifItem({ notification, onCancel }: { notification: Notification; onCancel?: () => void }) {
   const typeInfo = NOTIF_TYPES.find((t) => t.type === notification.type) || NOTIF_TYPES[3];
   const date = notification.sent_at || notification.scheduled_at || notification.created_at;
+  const tone = notification.status === 'sent' ? 'success' : notification.status === 'scheduled' ? 'info' : 'error';
+  const statusLabel = notification.status === 'sent' ? '✓ Envoyée' : notification.status === 'scheduled' ? '⏱ Planifiée' : '✗ Échouée';
 
   return (
     <View style={notifStyles.item}>
-      <View style={notifStyles.left}>
-        <Ionicons name={typeInfo.icon} size={24} color={Colors.textSecondary} />
+      <View style={notifStyles.iconWrap}>
+        <Ionicons name={typeInfo.icon} size={19} color={Colors.goldDark} />
       </View>
       <View style={notifStyles.info}>
         <Text style={notifStyles.title}>{notification.title}</Text>
         <Text style={notifStyles.body} numberOfLines={2}>{notification.body}</Text>
         <View style={notifStyles.meta}>
-          <View style={[notifStyles.badge, {
-            backgroundColor: notification.status === 'sent' ? 'rgba(76,175,80,0.15)' :
-              notification.status === 'scheduled' ? 'rgba(33,150,243,0.15)' : 'rgba(244,67,54,0.15)',
-          }]}>
-            <Text style={[notifStyles.badgeText, {
-              color: notification.status === 'sent' ? Colors.success :
-                notification.status === 'scheduled' ? Colors.info : Colors.error,
-            }]}>
-              {notification.status === 'sent' ? '✓ Envoyée' : notification.status === 'scheduled' ? '⏱ Planifiée' : '✗ Échouée'}
-            </Text>
-          </View>
-          {date && <Text style={notifStyles.date}>{format(new Date(date), "d MMM, HH'h'mm", { locale: fr })}</Text>}
+          <Badge label={statusLabel} tone={tone} />
+          {date ? <Text style={notifStyles.date}>{format(new Date(date), "d MMM, HH'h'mm", { locale: fr })}</Text> : null}
           {notification.recipients_count > 0 && (
             <Text style={notifStyles.recipients}>{notification.recipients_count} destinataires</Text>
           )}
@@ -390,7 +376,7 @@ function NotifItem({ notification, onCancel }: { notification: Notification; onC
       </View>
       {onCancel && (
         <TouchableOpacity onPress={onCancel} style={notifStyles.cancelBtn}>
-          <Text style={notifStyles.cancelBtnText}>✕</Text>
+          <Ionicons name="close" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
       )}
     </View>
@@ -399,70 +385,82 @@ function NotifItem({ notification, onCancel }: { notification: Notification; onC
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { padding: Spacing.lg, paddingTop: 60 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
-  tabsBar: { flexDirection: 'row', backgroundColor: Colors.card, marginHorizontal: Spacing.lg, borderRadius: BorderRadius.md, padding: 4, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border },
-  tab: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: BorderRadius.sm },
-  tabActive: { backgroundColor: Colors.gold },
+  tabsBar: {
+    flexDirection: 'row', backgroundColor: Colors.inputBg,
+    marginHorizontal: Spacing.lg, borderRadius: BorderRadius.md, padding: 4,
+    marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border,
+  },
+  tab: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: BorderRadius.sm },
+  tabActive: { backgroundColor: Colors.card, ...Shadows.card },
   tabText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-  tabTextActive: { color: '#000' },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.8 },
+  tabTextActive: { color: Colors.goldDark, fontWeight: '700' },
+  fieldLabel: {
+    fontSize: 12, fontWeight: '600', color: Colors.textSecondary,
+    marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.8,
+  },
   fieldRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  charCount: { fontSize: 12, color: Colors.textSecondary },
+  charCount: { fontSize: 12, color: Colors.textMuted },
   typeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
   typeChip: {
-    flex: 1, backgroundColor: Colors.card, borderRadius: BorderRadius.sm,
-    padding: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.card, borderRadius: BorderRadius.md,
+    paddingVertical: 12, alignItems: 'center', gap: 4,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  typeChipActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  typeIcon: { fontSize: 20, marginBottom: 2 },
-  typeLabel: { fontSize: 10, color: Colors.textSecondary, fontWeight: '600' },
-  typeLabelActive: { color: '#000' },
+  typeChipActive: { backgroundColor: Colors.goldSoft, borderColor: Colors.goldSoftBorder },
+  typeLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600' },
+  typeLabelActive: { color: Colors.goldDark, fontWeight: '700' },
   input: {
     backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md,
-    color: Colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.lg,
+    color: Colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: Colors.border,
+    marginBottom: Spacing.lg,
   },
   textArea: { height: 80, textAlignVertical: 'top' },
-  lockscreenPreview: { borderRadius: BorderRadius.lg, overflow: 'hidden', marginBottom: Spacing.lg },
-  lockscreenBg: { backgroundColor: '#1c1c1e', borderRadius: 20, padding: Spacing.lg },
+  lockscreenBg: { backgroundColor: '#15171C', borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.lg },
   lockscreenTime: { alignItems: 'center', marginBottom: Spacing.lg },
   lockscreenClock: { fontSize: 52, fontWeight: '200', color: '#fff' },
-  lockscreenDateText: { fontSize: 15, color: 'rgba(255,255,255,0.7)' },
+  lockscreenDateText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', textTransform: 'capitalize' },
   notifBubble: {
-    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.14)', borderRadius: 16,
     padding: Spacing.md, flexDirection: 'row', gap: Spacing.md,
   },
-  notifAppIcon: { width: 36, height: 36, borderRadius: 8, backgroundColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
+  notifAppIcon: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center' },
   notifContent: { flex: 1 },
   notifHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   notifAppName: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   notifTime: { fontSize: 12, color: 'rgba(255,255,255,0.5)' },
   notifTitle: { fontSize: 14, fontWeight: '700', color: '#fff', marginBottom: 2 },
   notifBody: { fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 18 },
-  recipientsInfo: { backgroundColor: 'rgba(201,168,76,0.1)', borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.lg, borderWidth: 1, borderColor: 'rgba(201,168,76,0.2)' },
-  recipientsText: { fontSize: 14, color: Colors.textSecondary },
-  recipientsCount: { color: Colors.gold, fontWeight: '700' },
-  sendButton: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginBottom: Spacing.xl },
-  sendButtonText: { color: '#000', fontSize: 16, fontWeight: '700' },
-  datePicker: { backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.lg },
+  recipientsInfo: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.goldSoft, borderRadius: BorderRadius.md,
+    padding: Spacing.md, marginBottom: Spacing.lg,
+  },
+  recipientsText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  recipientsCount: { color: Colors.goldDark, fontWeight: '800' },
+  datePicker: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md,
+    borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.lg,
+  },
   datePickerText: { color: Colors.textPrimary, fontSize: 15 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
-  emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
+  emptyContainer: { flex: 1, justifyContent: 'center' },
 });
 
 const notifStyles = StyleSheet.create({
-  item: { backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md, flexDirection: 'row', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  left: { paddingTop: 2 },
-  icon: { fontSize: 24 },
+  item: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.lg, padding: Spacing.md,
+    marginBottom: Spacing.md, flexDirection: 'row', gap: Spacing.md,
+    borderWidth: 1, borderColor: Colors.cardBorder, ...Shadows.card,
+  },
+  iconWrap: {
+    width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.goldSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
   info: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary, marginBottom: 4 },
+  title: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 3 },
   body: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
-  badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 11, fontWeight: '600' },
   date: { fontSize: 11, color: Colors.textMuted },
   recipients: { fontSize: 11, color: Colors.textMuted },
   cancelBtn: { padding: Spacing.sm },
-  cancelBtnText: { color: Colors.textSecondary, fontSize: 16 },
 });

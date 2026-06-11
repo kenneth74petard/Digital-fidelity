@@ -9,6 +9,7 @@ import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
 import { Colors, Spacing, BorderRadius, getThemeMode, setThemeMode, ThemeMode } from '../../constants/theme';
 import { LoyaltyType } from '../../../shared/types';
+import { ScreenHeader, Card, SectionLabel, Button, Input, MenuRow } from '../../components/ui';
 
 export default function SettingsScreen() {
   const { restaurant, updateRestaurant, reset } = useRestaurantStore();
@@ -40,7 +41,6 @@ export default function SettingsScreen() {
   };
 
   const handleExportData = () => {
-    const data = { restaurant, customers: customers.map((c) => ({ ...c, push_subscription: undefined })), exported_at: new Date().toISOString() };
     Alert.alert('Export RGPD', `Les données de ${customers.length} client(s) seraient exportées en JSON.\n\n(Intégrez expo-sharing pour le partage réel)`);
   };
 
@@ -77,120 +77,112 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Text style={styles.pageTitle}>Réglages</Text>
+      <ScreenHeader title="Réglages" />
 
-      {/* Restaurant section */}
-      <SectionTitle title="Apparence" />
-      <View style={styles.card}>
-        <View style={[styles.menuItem, { borderBottomWidth: 0, paddingVertical: 0 }]}> 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name={themeMode === 'dark' ? 'moon-outline' : 'sunny-outline'} size={18} color={Colors.textPrimary} />
-            <Text style={styles.menuItemText}>Mode sombre</Text>
-          </View>
-          <Switch
-            value={themeMode === 'dark'}
-            onValueChange={handleThemeChange}
-            thumbColor={themeMode === 'dark' ? Colors.gold : '#f4f3f4'}
-            trackColor={{ false: '#d7d2c7', true: 'rgba(201,168,76,0.4)' }}
+      <View style={styles.body}>
+        {/* Apparence */}
+        <SectionLabel title="Apparence" />
+        <Card style={styles.sectionCard}>
+          <MenuRow
+            icon={themeMode === 'dark' ? 'moon-outline' : 'sunny-outline'}
+            label="Mode sombre"
+            last
+            right={
+              <Switch
+                value={themeMode === 'dark'}
+                onValueChange={handleThemeChange}
+                thumbColor={themeMode === 'dark' ? Colors.gold : '#f4f3f4'}
+                trackColor={{ false: '#d7d2c7', true: Colors.goldSoftBorder }}
+              />
+            }
           />
-        </View>
-      </View>
+        </Card>
 
-      {/* Restaurant section */}
-      <SectionTitle title="Mon Commerce" />
-      <View style={styles.card}>
-        <Field label="Système de fidélité">
+        {/* Mon commerce */}
+        <SectionLabel title="Mon commerce" style={{ marginTop: Spacing.lg }} />
+        <Card style={styles.sectionCard}>
+          <Text style={styles.fieldLabel}>Système de fidélité</Text>
           <View style={styles.loyaltyRow}>
             <TouchableOpacity
               style={[styles.loyaltyBtn, loyaltyType === 'stamps' && styles.loyaltyBtnActive]}
               onPress={() => setLoyaltyType('stamps')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="ribbon" size={18} color={loyaltyType === 'stamps' ? '#000' : Colors.textSecondary} />
+              <Ionicons name="ribbon" size={18} color={loyaltyType === 'stamps' ? Colors.goldDark : Colors.textSecondary} />
               <Text style={[styles.loyaltyBtnText, loyaltyType === 'stamps' && styles.loyaltyBtnTextActive]}>Tampons</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.loyaltyBtn, loyaltyType === 'points' && styles.loyaltyBtnActive]}
               onPress={() => setLoyaltyType('points')}
+              activeOpacity={0.7}
             >
-              <Ionicons name="star" size={18} color={loyaltyType === 'points' ? '#000' : Colors.textSecondary} />
+              <Ionicons name="star" size={18} color={loyaltyType === 'points' ? Colors.goldDark : Colors.textSecondary} />
               <Text style={[styles.loyaltyBtnText, loyaltyType === 'points' && styles.loyaltyBtnTextActive]}>Points</Text>
             </TouchableOpacity>
           </View>
-        </Field>
-        <Field label="Nom du commerce">
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nom..." placeholderTextColor={Colors.textSecondary} />
-        </Field>
-        <Field label="Description">
-          <TextInput style={[styles.input, styles.textArea]} value={description} onChangeText={setDescription} placeholder="Description..." placeholderTextColor={Colors.textSecondary} multiline />
-        </Field>
-        {loyaltyType === 'stamps' && (
-          <Field label={`Objectif tampons: ${stampGoal}`}>
-            <View style={styles.counterRow}>
-              <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.max(5, stampGoal - 1))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
-              <Text style={styles.counterValue}>{stampGoal}</Text>
-              <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.min(20, stampGoal + 1))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
-            </View>
-          </Field>
-        )}
-        {loyaltyType === 'points' && (
-          <Field label={`Points par visite: ${pointsPerVisit}`}>
-            <View style={styles.counterRow}>
-              <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.max(50, pointsPerVisit - 50))}><Text style={styles.counterBtnText}>−</Text></TouchableOpacity>
-              <Text style={styles.counterValue}>{pointsPerVisit}</Text>
-              <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.min(500, pointsPerVisit + 50))}><Text style={styles.counterBtnText}>+</Text></TouchableOpacity>
-            </View>
-          </Field>
-        )}
-        <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-          <Text style={styles.saveBtnText}>{saving ? 'Sauvegarde...' : 'Sauvegarder'}</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* GDPR */}
-      <SectionTitle title="Conformité RGPD" />
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.menuItem} onPress={() => setShowGdprModal(true)}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="document-text-outline" size={18} color={Colors.textPrimary} />
-            <Text style={styles.menuItemText}>Politique de confidentialité</Text>
-          </View>
-          <Text style={styles.menuItemArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={handleExportData}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="download-outline" size={18} color={Colors.textPrimary} />
-            <Text style={styles.menuItemText}>Exporter toutes les données</Text>
-          </View>
-          <Text style={styles.menuItemArrow}>›</Text>
-        </TouchableOpacity>
-        <View style={styles.gdprStat}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Input label="Nom du commerce" value={name} onChangeText={setName} placeholder="Nom..." />
+          <Input label="Description" value={description} onChangeText={setDescription} placeholder="Description..." multiline />
+
+          {loyaltyType === 'stamps' && (
+            <View style={styles.counterField}>
+              <Text style={styles.fieldLabel}>Objectif tampons</Text>
+              <View style={styles.counterRow}>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.max(5, stampGoal - 1))}>
+                  <Ionicons name="remove" size={18} color={Colors.textPrimary} />
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{stampGoal}</Text>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setStampGoal(Math.min(20, stampGoal + 1))}>
+                  <Ionicons name="add" size={18} color={Colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {loyaltyType === 'points' && (
+            <View style={styles.counterField}>
+              <Text style={styles.fieldLabel}>Points par visite</Text>
+              <View style={styles.counterRow}>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.max(50, pointsPerVisit - 50))}>
+                  <Ionicons name="remove" size={18} color={Colors.textPrimary} />
+                </TouchableOpacity>
+                <Text style={styles.counterValue}>{pointsPerVisit}</Text>
+                <TouchableOpacity style={styles.counterBtn} onPress={() => setPointsPerVisit(Math.min(500, pointsPerVisit + 50))}>
+                  <Ionicons name="add" size={18} color={Colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          <Button label="Sauvegarder" onPress={handleSave} loading={saving} style={{ marginTop: Spacing.sm }} />
+        </Card>
+
+        {/* RGPD */}
+        <SectionLabel title="Conformité RGPD" style={{ marginTop: Spacing.lg }} />
+        <Card style={styles.sectionCard}>
+          <MenuRow icon="document-text-outline" label="Politique de confidentialité" onPress={() => setShowGdprModal(true)} />
+          <MenuRow icon="download-outline" label="Exporter toutes les données" onPress={handleExportData} />
+          <View style={styles.gdprStat}>
             <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
             <Text style={styles.gdprStatText}>
               <Text style={styles.gdprStatCount}>{marketingCount}</Text> client{marketingCount !== 1 ? 's' : ''} avec consentement marketing
             </Text>
           </View>
-        </View>
+        </Card>
+
+        {/* Zone de danger */}
+        <SectionLabel title="Zone de danger" style={{ marginTop: Spacing.lg }} />
+        <Card style={styles.sectionCard}>
+          <Button label="Réinitialiser toutes les données" icon="warning-outline" variant="danger" onPress={handleReset} />
+        </Card>
       </View>
 
-      {/* Danger zone */}
-      <SectionTitle title="Zone de danger" />
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.dangerBtn} onPress={handleReset}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="warning-outline" size={18} color={Colors.error} />
-            <Text style={styles.dangerBtnText}>Réinitialiser toutes les données</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* GDPR Modal */}
-      <Modal visible={showGdprModal} animationType="slide">
+      {/* Modale RGPD */}
+      <Modal visible={showGdprModal} animationType="slide" onRequestClose={() => setShowGdprModal(false)}>
         <View style={modalStyles.container}>
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>Politique de confidentialité</Text>
-            <TouchableOpacity onPress={() => setShowGdprModal(false)}>
-              <Text style={modalStyles.close}>✕</Text>
+            <TouchableOpacity onPress={() => setShowGdprModal(false)} style={modalStyles.closeBtn}>
+              <Ionicons name="close" size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
           <ScrollView style={modalStyles.content}>
@@ -198,21 +190,7 @@ export default function SettingsScreen() {
           </ScrollView>
         </View>
       </Modal>
-
     </ScrollView>
-  );
-}
-
-function SectionTitle({ title }: { title: string }) {
-  return <Text style={styles.sectionTitle}>{title}</Text>;
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
-    </View>
   );
 }
 
@@ -247,55 +225,45 @@ Vos données sont stockées de manière sécurisée et ne sont jamais vendues à
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.lg, paddingTop: 60, paddingBottom: 100 },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.xl },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm, marginTop: Spacing.lg },
-  card: { backgroundColor: Colors.card, borderRadius: BorderRadius.lg, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm },
-  field: { marginBottom: Spacing.md },
-  fieldLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.sm, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6 },
-  input: { backgroundColor: Colors.background, borderRadius: BorderRadius.sm, padding: Spacing.md, color: Colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
-  textArea: { height: 70, textAlignVertical: 'top' },
-  loyaltyRow: { flexDirection: 'row', gap: Spacing.sm },
-  loyaltyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  loyaltyBtnActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
+  content: { paddingBottom: 100 },
+  body: { paddingHorizontal: Spacing.lg },
+  sectionCard: { marginBottom: Spacing.xs },
+  fieldLabel: {
+    fontSize: 12, color: Colors.textSecondary, marginBottom: 6,
+    fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.6,
+  },
+  loyaltyRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  loyaltyBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: Colors.inputBg, borderRadius: BorderRadius.md, padding: Spacing.md,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  loyaltyBtnActive: { backgroundColor: Colors.goldSoft, borderColor: Colors.goldSoftBorder },
   loyaltyBtnText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  loyaltyBtnTextActive: { color: '#000' },
+  loyaltyBtnTextActive: { color: Colors.goldDark, fontWeight: '700' },
+  counterField: { marginBottom: Spacing.md },
   counterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
-  counterBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
-  counterBtnText: { fontSize: 20, color: Colors.textPrimary },
-  counterValue: { fontSize: 20, fontWeight: '700', color: Colors.gold, minWidth: 40, textAlign: 'center' },
-  saveBtn: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
-  saveBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
-  simBanner: { flexDirection: 'row', gap: Spacing.md, backgroundColor: 'rgba(255,165,0,0.1)', borderRadius: BorderRadius.md, padding: Spacing.md, borderWidth: 1, borderColor: 'rgba(255,165,0,0.2)', marginBottom: Spacing.md },
-  simBannerTitle: { fontSize: 13, fontWeight: '700', color: '#FFA500', marginBottom: 4 },
-  simBannerText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  vapidRow: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: Spacing.md },
-  vapidLabel: { fontSize: 11, color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.6 },
-  vapidValue: { fontSize: 11, color: Colors.textMuted, fontFamily: 'monospace' },
-  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  menuItemText: { fontSize: 15, color: Colors.textPrimary },
-  menuItemArrow: { fontSize: 20, color: Colors.textSecondary },
-  gdprStat: { paddingTop: Spacing.md },
+  counterBtn: {
+    width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.inputBg,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border,
+  },
+  counterValue: { fontSize: 20, fontWeight: '800', color: Colors.goldDark, minWidth: 48, textAlign: 'center' },
+  gdprStat: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: Spacing.md },
   gdprStatText: { fontSize: 14, color: Colors.textSecondary },
-  gdprStatCount: { color: Colors.gold, fontWeight: '700' },
-  walletMode: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  walletModeLabel: { fontSize: 15, color: Colors.textPrimary },
-  walletModeBadge: { backgroundColor: 'rgba(255,165,0,0.15)', borderRadius: BorderRadius.sm, paddingHorizontal: Spacing.sm, paddingVertical: 4 },
-  walletModeBadgeText: { fontSize: 12, color: '#FFA500', fontWeight: '600' },
-  checklist: { gap: Spacing.sm, marginBottom: Spacing.md },
-  checklistItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  checklistText: { fontSize: 14, color: Colors.textSecondary },
-  learnMoreBtn: { borderWidth: 1, borderColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  learnMoreBtnText: { color: Colors.gold, fontWeight: '600' },
-  dangerBtn: { borderWidth: 1, borderColor: Colors.error, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  dangerBtnText: { color: Colors.error, fontWeight: '600', fontSize: 15 },
+  gdprStatCount: { color: Colors.goldDark, fontWeight: '800' },
 });
 
 const modalStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.lg, paddingTop: 60, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
-  close: { fontSize: 20, color: Colors.textSecondary },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: Spacing.lg, paddingTop: 56, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  title: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary },
+  closeBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.inputBg,
+    alignItems: 'center', justifyContent: 'center',
+  },
   content: { flex: 1, padding: Spacing.lg },
   text: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
 });

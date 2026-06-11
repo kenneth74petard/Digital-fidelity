@@ -4,10 +4,10 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRestaurantStore } from '../stores/restaurantStore';
-import { Colors } from '../constants/theme';
+import { Colors, getThemeMode } from '../constants/theme';
 
 export default function RootLayout() {
-  const { checkOnboarding, isOnboarded, isLoading } = useRestaurantStore();
+  const { checkOnboarding } = useRestaurantStore();
 
   useEffect(() => {
     checkOnboarding();
@@ -21,7 +21,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
-      <StatusBar style="light" backgroundColor={Colors.background} />
+      <StatusBar style={getThemeMode() === 'dark' ? 'light' : 'dark'} backgroundColor={Colors.background} />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -39,6 +39,7 @@ export default function RootLayout() {
             headerTintColor: Colors.textPrimary,
             headerTitle: 'Détail client',
             headerBackTitle: 'Retour',
+            headerShadowVisible: false,
           }}
         />
       </Stack>

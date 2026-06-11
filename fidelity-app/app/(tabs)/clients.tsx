@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Switch,
@@ -10,8 +10,12 @@ import QRCode from 'react-native-qrcode-svg';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { useCustomersStore } from '../../stores/customersStore';
 import { customersApi } from '../../lib/api';
-import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { Customer } from '../../../shared/types';
+import {
+  ScreenHeader, IconButton, Chip, Avatar, StampDots, Badge,
+  EmptyState, Button, Input, BottomSheet,
+} from '../../components/ui';
 
 type FilterType = 'all' | 'active' | 'reward';
 
@@ -41,14 +45,13 @@ function parseCsv(raw: string): { first_name: string; last_name: string; email: 
 
 export default function ClientsScreen() {
   const { restaurant } = useRestaurantStore();
-  const { customers, loadCustomers, addStamp, createCustomer, isLoading } = useCustomersStore();
+  const { customers, loadCustomers, addStamp, isLoading } = useCustomersStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [stampConfirm, setStampConfirm] = useState<Customer | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -80,75 +83,62 @@ export default function ClientsScreen() {
     setStampConfirm(null);
   };
 
-  const filteredCustomers = customers;
-
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Clients</Text>
-          <Text style={styles.count}>{customers.length} client{customers.length !== 1 ? 's' : ''}</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowQrModal(true)}>
-            <Ionicons name="qr-code-outline" size={20} color={Colors.gold} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} onPress={() => setShowImportModal(true)}>
-            <Ionicons name="cloud-upload-outline" size={20} color={Colors.gold} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Clients"
+        subtitle={`${customers.length} client${customers.length !== 1 ? 's' : ''}`}
+        right={
+          <View style={styles.headerActions}>
+            <IconButton icon="qr-code-outline" onPress={() => setShowQrModal(true)} />
+            <IconButton icon="cloud-upload-outline" onPress={() => setShowImportModal(true)} />
+          </View>
+        }
+      />
 
-      {/* Search */}
+      {/* Recherche */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={16} color={Colors.textSecondary} style={{ marginRight: Spacing.sm }} />
+        <Ionicons name="search" size={16} color={Colors.textMuted} style={{ marginRight: Spacing.sm }} />
         <TextInput
           style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
           placeholder="Rechercher par nom ou email..."
-          placeholderTextColor={Colors.textSecondary}
+          placeholderTextColor={Colors.textMuted}
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Text style={styles.clearSearch}>✕</Text>
+            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
-        {(['all', 'active', 'reward'] as FilterType[]).map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filterChip, filter === f && styles.filterChipActive]}
-            onPress={() => setFilter(f)}
-          >
-            <Text style={[styles.filterChipText, filter === f && styles.filterChipTextActive]}>
-              {f === 'all' ? 'Tous' : f === 'active' ? 'Actifs' : 'Récompense disponible'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Filtres */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={{ gap: Spacing.sm, paddingRight: Spacing.lg }}>
+        <Chip label="Tous" active={filter === 'all'} onPress={() => setFilter('all')} />
+        <Chip label="Actifs" active={filter === 'active'} onPress={() => setFilter('active')} />
+        <Chip label="Récompense disponible" icon="gift-outline" active={filter === 'reward'} onPress={() => setFilter('reward')} />
       </ScrollView>
 
-      {/* List */}
+      {/* Liste */}
       {isLoading && customers.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={Colors.gold} size="large" />
         </View>
       ) : customers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="people-outline" size={64} color={Colors.textSecondary} style={{ marginBottom: Spacing.lg }} />
-          <Text style={styles.emptyTitle}>Aucun client</Text>
-          <Text style={styles.emptySubtitle}>Ajoutez votre premier client en appuyant sur +</Text>
+          <EmptyState
+            icon="people-outline"
+            title="Aucun client"
+            subtitle="Ajoutez votre premier client en appuyant sur +"
+          />
         </View>
       ) : (
         <FlashList
-          data={filteredCustomers}
+          data={customers}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={100}
-          contentContainerStyle={{ padding: Spacing.md, paddingBottom: 100 }}
+          estimatedItemSize={150}
+          contentContainerStyle={{ padding: Spacing.lg, paddingTop: Spacing.xs, paddingBottom: 110 }}
           renderItem={({ item }) => (
             <CustomerCard
               customer={item}
@@ -169,12 +159,12 @@ export default function ClientsScreen() {
         />
       )}
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
-        <Text style={styles.fabText}>+</Text>
+      {/* Bouton flottant */}
+      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)} activeOpacity={0.85}>
+        <Ionicons name="add" size={30} color={Colors.onGold} />
       </TouchableOpacity>
 
-      {/* Add customer modal */}
+      {/* Nouveau client */}
       <AddCustomerModal
         visible={showAddModal}
         restaurantId={restaurant?.id || ''}
@@ -182,7 +172,7 @@ export default function ClientsScreen() {
         onCreated={() => { setShowAddModal(false); loadData(); }}
       />
 
-      {/* Card preview modal */}
+      {/* Aperçu carte */}
       {selectedCustomer && (
         <CardPreviewModal
           visible={showPreviewModal}
@@ -192,13 +182,24 @@ export default function ClientsScreen() {
         />
       )}
 
-      {/* QR code d'inscription */}
-      <QrRegisterModal
+      {/* QR d'inscription */}
+      <BottomSheet
         visible={showQrModal}
-        restaurantId={restaurant?.id || ''}
-        restaurantName={restaurant?.name || ''}
         onClose={() => setShowQrModal(false)}
-      />
+        title="QR d'inscription"
+        subtitle="Les clients scannent ce QR pour s'inscrire eux-mêmes"
+      >
+        <View style={qrStyles.body}>
+          <View style={qrStyles.qrBox}>
+            <QRCode value={getRegisterUrl(restaurant?.id || '')} size={200} backgroundColor="#fff" color="#000" />
+          </View>
+          <View style={qrStyles.urlBox}>
+            <Text style={qrStyles.urlText} numberOfLines={2} selectable>{getRegisterUrl(restaurant?.id || '')}</Text>
+          </View>
+          <Text style={qrStyles.hint}>Affichez ce QR à la caisse ou imprimez-le</Text>
+          <Button label="Fermer" onPress={() => setShowQrModal(false)} style={{ alignSelf: 'stretch' }} />
+        </View>
+      </BottomSheet>
 
       {/* Import CSV */}
       <ImportCsvModal
@@ -208,30 +209,30 @@ export default function ClientsScreen() {
         onImported={() => { setShowImportModal(false); loadData(); }}
       />
 
-      {/* Stamp confirmation */}
+      {/* Confirmation tampon */}
       {stampConfirm && (
         <Modal transparent animationType="fade">
           <View style={styles.confirmOverlay}>
             <View style={styles.confirmSheet}>
+              <View style={styles.confirmIconWrap}>
+                <Ionicons name="ribbon" size={26} color={Colors.goldDark} />
+              </View>
               <Text style={styles.confirmTitle}>Ajouter un tampon</Text>
               <Text style={styles.confirmText}>
                 Ajouter un tampon pour {stampConfirm.first_name} {stampConfirm.last_name} ?
               </Text>
               <Text style={styles.confirmStamps}>
-                {stampConfirm.stamps}/{stampGoal} tampons → {stampConfirm.stamps + 1}/{stampGoal}
+                {stampConfirm.stamps}/{stampGoal} → {stampConfirm.stamps + 1}/{stampGoal}
               </Text>
               {stampConfirm.stamps + 1 >= stampGoal && (
                 <View style={styles.rewardAlert}>
+                  <Ionicons name="gift" size={15} color={Colors.success} />
                   <Text style={styles.rewardAlertText}>Cette visite déclenchera une récompense !</Text>
                 </View>
               )}
               <View style={styles.confirmButtons}>
-                <TouchableOpacity style={styles.cancelButton} onPress={() => setStampConfirm(null)}>
-                  <Text style={styles.cancelButtonText}>Annuler</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.confirmButton} onPress={() => handleAddStamp(stampConfirm)}>
-                  <Text style={styles.confirmButtonText}>Confirmer</Text>
-                </TouchableOpacity>
+                <Button label="Annuler" variant="secondary" onPress={() => setStampConfirm(null)} style={{ flex: 1 }} />
+                <Button label="Confirmer" onPress={() => handleAddStamp(stampConfirm)} style={{ flex: 1 }} />
               </View>
             </View>
           </View>
@@ -252,101 +253,64 @@ function CustomerCard({
   onView: () => void;
   onDetail: () => void;
 }) {
-  const initials = `${customer.first_name?.[0] ?? ''}${customer.last_name?.[0] ?? ''}`.toUpperCase() || '?';
   const hasReward = customer.stamps >= stampGoal;
-  const displayStamps = Math.min(stampGoal, 10);
 
   return (
-    <TouchableOpacity style={cardStyles.card} onPress={onDetail}>
+    <TouchableOpacity style={cardStyles.card} onPress={onDetail} activeOpacity={0.85}>
       <View style={cardStyles.top}>
-        <View style={[cardStyles.avatar, hasReward && loyaltyType === 'stamps' && cardStyles.avatarGold]}>
-          <Text style={cardStyles.initials}>{initials}</Text>
-          {hasReward && loyaltyType === 'stamps' && <View style={cardStyles.rewardDot} />}
-        </View>
+        <Avatar name={`${customer.first_name} ${customer.last_name}`} highlight={hasReward && loyaltyType === 'stamps'} />
         <View style={cardStyles.info}>
           <Text style={cardStyles.name}>{customer.first_name} {customer.last_name}</Text>
           <Text style={cardStyles.email}>{customer.email}</Text>
         </View>
         <View style={cardStyles.badges}>
           {loyaltyType === 'points' ? (
-            <View style={cardStyles.pointsBadge}>
-              <Ionicons name="star" size={12} color={Colors.gold} />
-              <Text style={cardStyles.pointsBadgeText}>{customer.points} pts</Text>
-            </View>
+            <Badge label={`★ ${customer.points} pts`} />
           ) : (
             <Text style={cardStyles.points}>{customer.stamps}/{stampGoal}</Text>
           )}
-          {customer.discount_pct > 0 && (
-            <View style={cardStyles.discountBadge}>
-              <Text style={cardStyles.discountText}>-{customer.discount_pct}%</Text>
-            </View>
-          )}
+          {customer.discount_pct > 0 && <Badge label={`-${customer.discount_pct}%`} tone="success" />}
         </View>
       </View>
 
       {loyaltyType === 'stamps' && (
         <View style={cardStyles.stampsRow}>
-          <View style={cardStyles.stampDots}>
-            {Array.from({ length: displayStamps }).map((_, i) => (
-              <View key={i} style={[cardStyles.stampDot, i < customer.stamps && cardStyles.stampDotFilled]} />
-            ))}
-          </View>
-          <Text style={cardStyles.stampsCount}>{customer.stamps}/{stampGoal}</Text>
+          <StampDots count={customer.stamps} total={Math.min(stampGoal, 10)} />
+          {hasReward && <Badge label="Récompense !" tone="success" />}
         </View>
       )}
 
       {loyaltyType === 'points' && (
         <View style={cardStyles.pointsBar}>
           <Ionicons name="star-outline" size={13} color={Colors.textSecondary} />
-          <Text style={cardStyles.pointsBarText}>{customer.total_visits} visite{customer.total_visits !== 1 ? 's' : ''} · {customer.points} points cumulés</Text>
+          <Text style={cardStyles.pointsBarText}>
+            {customer.total_visits} visite{customer.total_visits !== 1 ? 's' : ''} · {customer.points} points cumulés
+          </Text>
         </View>
       )}
 
       <View style={cardStyles.actions}>
         {loyaltyType === 'stamps' ? (
-          <TouchableOpacity style={cardStyles.actionBtn} onPress={onStamp}>
-            <Text style={cardStyles.actionBtnText}>+ Tampon</Text>
+          <TouchableOpacity style={cardStyles.actionPrimary} onPress={onStamp} activeOpacity={0.8}>
+            <Ionicons name="add" size={15} color={Colors.onGold} />
+            <Text style={cardStyles.actionPrimaryText}>Tampon</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={cardStyles.actionBtn} onPress={onAddPoints}>
-            <Text style={cardStyles.actionBtnText}>+ Points</Text>
+          <TouchableOpacity style={cardStyles.actionPrimary} onPress={onAddPoints} activeOpacity={0.8}>
+            <Ionicons name="add" size={15} color={Colors.onGold} />
+            <Text style={cardStyles.actionPrimaryText}>Points</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={[cardStyles.actionBtn, cardStyles.actionBtnOutline]} onPress={onView}>
+        <TouchableOpacity style={cardStyles.actionGhost} onPress={onView} activeOpacity={0.7}>
           <Ionicons name="eye-outline" size={14} color={Colors.textSecondary} />
-          <Text style={cardStyles.actionBtnOutlineText}> Carte</Text>
+          <Text style={cardStyles.actionGhostText}>Carte</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[cardStyles.actionBtn, cardStyles.actionBtnOutline]} onPress={onDetail}>
+        <TouchableOpacity style={cardStyles.actionGhost} onPress={onDetail} activeOpacity={0.7}>
           <Ionicons name="ellipsis-horizontal" size={14} color={Colors.textSecondary} />
-          <Text style={cardStyles.actionBtnOutlineText}> Plus</Text>
+          <Text style={cardStyles.actionGhostText}>Plus</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
-  );
-}
-
-function QrRegisterModal({ visible, restaurantId, restaurantName, onClose }: { visible: boolean; restaurantId: string; restaurantName: string; onClose: () => void }) {
-  const url = getRegisterUrl(restaurantId);
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={qrStyles.overlay}>
-        <View style={qrStyles.sheet}>
-          <View style={qrStyles.handle} />
-          <Text style={qrStyles.title}>QR d'inscription</Text>
-          <Text style={qrStyles.sub}>Les clients scannent ce QR pour s'inscrire eux-mêmes</Text>
-          <View style={qrStyles.qrBox}>
-            <QRCode value={url} size={200} backgroundColor="#fff" color="#000" />
-          </View>
-          <View style={qrStyles.urlBox}>
-            <Text style={qrStyles.urlText} numberOfLines={2} selectable>{url}</Text>
-          </View>
-          <Text style={qrStyles.hint}>Affichez ce QR à la caisse ou imprimez-le</Text>
-          <TouchableOpacity style={qrStyles.closeBtn} onPress={onClose}>
-            <Text style={qrStyles.closeBtnText}>Fermer</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -379,7 +343,7 @@ function ImportCsvModal({ visible, restaurantId, onClose, onImported }: { visibl
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={importStyles.overlay}>
           <View style={importStyles.sheet}>
@@ -397,29 +361,27 @@ function ImportCsvModal({ visible, restaurantId, onClose, onImported }: { visibl
               value={csv}
               onChangeText={setCsv}
               placeholder="Collez votre CSV ici..."
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={Colors.textMuted}
               multiline
               textAlignVertical="top"
               autoCapitalize="none"
               autoCorrect={false}
             />
             {preview.length > 0 && (
-              <Text style={importStyles.preview}>{preview.length} ligne(s) détectée(s) et prête(s) à l'import</Text>
+              <View style={importStyles.previewRow}>
+                <Ionicons name="checkmark-circle" size={15} color={Colors.success} />
+                <Text style={importStyles.preview}>{preview.length} ligne(s) détectée(s) et prête(s) à l'import</Text>
+              </View>
             )}
             <View style={importStyles.buttons}>
-              <TouchableOpacity style={importStyles.cancelBtn} onPress={() => { setCsv(''); onClose(); }}>
-                <Text style={importStyles.cancelText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[importStyles.importBtn, (importing || preview.length === 0) && { opacity: 0.5 }]}
+              <Button label="Annuler" variant="secondary" onPress={() => { setCsv(''); onClose(); }} style={{ flex: 1 }} />
+              <Button
+                label={`Importer ${preview.length > 0 ? `(${preview.length})` : ''}`}
                 onPress={handleImport}
-                disabled={importing || preview.length === 0}
-              >
-                {importing
-                  ? <ActivityIndicator color="#000" />
-                  : <Text style={importStyles.importText}>Importer {preview.length > 0 ? `(${preview.length})` : ''}</Text>
-                }
-              </TouchableOpacity>
+                loading={importing}
+                disabled={preview.length === 0}
+                style={{ flex: 2 }}
+              />
             </View>
           </View>
         </View>
@@ -481,7 +443,7 @@ function AddCustomerModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={modalStyles.overlay}>
           <View style={modalStyles.sheet}>
@@ -491,27 +453,20 @@ function AddCustomerModal({
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={modalStyles.row}>
                 <View style={{ flex: 1 }}>
-                  <Text style={modalStyles.label}>Prénom *</Text>
-                  <TextInput style={modalStyles.input} value={firstName} onChangeText={setFirstName} placeholder="Marie" placeholderTextColor={Colors.textSecondary} />
+                  <Input label="Prénom *" value={firstName} onChangeText={setFirstName} placeholder="Marie" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={modalStyles.label}>Nom *</Text>
-                  <TextInput style={modalStyles.input} value={lastName} onChangeText={setLastName} placeholder="Dupont" placeholderTextColor={Colors.textSecondary} />
+                  <Input label="Nom *" value={lastName} onChangeText={setLastName} placeholder="Dupont" />
                 </View>
               </View>
 
-              <Text style={modalStyles.label}>Email *</Text>
-              <TextInput
-                style={modalStyles.input} value={email} onChangeText={setEmail}
-                placeholder="marie@email.com" placeholderTextColor={Colors.textSecondary}
-                keyboardType="email-address" autoCapitalize="none"
+              <Input
+                label="Email *" value={email} onChangeText={setEmail}
+                placeholder="marie@email.com" keyboardType="email-address" autoCapitalize="none"
               />
-
-              <Text style={modalStyles.label}>Téléphone (optionnel)</Text>
-              <TextInput
-                style={modalStyles.input} value={phone} onChangeText={setPhone}
-                placeholder="+33 6 12 34 56 78" placeholderTextColor={Colors.textSecondary}
-                keyboardType="phone-pad"
+              <Input
+                label="Téléphone (optionnel)" value={phone} onChangeText={setPhone}
+                placeholder="+33 6 12 34 56 78" keyboardType="phone-pad"
               />
 
               <View style={modalStyles.consentRow}>
@@ -529,16 +484,8 @@ function AddCustomerModal({
               </View>
 
               <View style={modalStyles.buttons}>
-                <TouchableOpacity style={modalStyles.cancelBtn} onPress={() => { reset(); onClose(); }}>
-                  <Text style={modalStyles.cancelBtnText}>Annuler</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[modalStyles.submitBtn, submitting && { opacity: 0.6 }]}
-                  onPress={handleSubmit}
-                  disabled={submitting}
-                >
-                  {submitting ? <ActivityIndicator color="#000" /> : <Text style={modalStyles.submitBtnText}>Créer le client</Text>}
-                </TouchableOpacity>
+                <Button label="Annuler" variant="secondary" onPress={() => { reset(); onClose(); }} style={{ flex: 1 }} />
+                <Button label="Créer le client" onPress={handleSubmit} loading={submitting} style={{ flex: 2 }} />
               </View>
             </ScrollView>
           </View>
@@ -552,14 +499,15 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
   const stampGoal = restaurant?.stamp_goal || 10;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={previewStyles.overlay}>
         <View style={previewStyles.container}>
           <TouchableOpacity style={previewStyles.closeBtn} onPress={onClose}>
-            <Text style={previewStyles.closeBtnText}>✕ Fermer</Text>
+            <Ionicons name="close" size={18} color={Colors.textPrimary} />
+            <Text style={previewStyles.closeBtnText}>Fermer</Text>
           </TouchableOpacity>
 
-          {/* Wallet card preview */}
+          {/* Aperçu de la carte Wallet */}
           <View style={[previewStyles.card, { backgroundColor: restaurant?.color_primary || Colors.gold }]}>
             <View style={previewStyles.cardHeader}>
               <Text style={previewStyles.cardEmoji}>{restaurant?.logo_emoji || '🏪'}</Text>
@@ -585,11 +533,11 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
             </View>
 
             <View style={previewStyles.statsRow}>
-              <View style={previewStyles.stat}>
+              <View>
                 <Text style={previewStyles.statValue}>{customer.points}</Text>
                 <Text style={previewStyles.statLabel}>Points</Text>
               </View>
-              <View style={previewStyles.stat}>
+              <View>
                 <Text style={previewStyles.statValue}>{customer.discount_pct}%</Text>
                 <Text style={previewStyles.statLabel}>Réduction</Text>
               </View>
@@ -603,7 +551,6 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
               <Text style={previewStyles.nfc}>⊕</Text>
             </View>
 
-            {/* Fake QR */}
             <View style={previewStyles.qrContainer}>
               <View style={previewStyles.fakeQr}>
                 <Text style={previewStyles.fakeQrText}>QR</Text>
@@ -615,158 +562,142 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
             Sans certificat Apple Developer, la carte ne peut pas être installée dans Apple Wallet.
           </Text>
 
-          <TouchableOpacity style={previewStyles.shareBtn}>
-            <Text style={previewStyles.shareBtnText}>Partager le QR d'inscription</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={previewStyles.downloadBtn}
+          <Button label="Partager le QR d'inscription" variant="secondary" onPress={() => {}} style={{ marginBottom: Spacing.md }} />
+          <Button
+            label="Télécharger la carte (.pkpass)"
             onPress={() => Alert.alert(
               'Wallet non configuré',
               'Cette carte ne peut pas être installée sans certificat Apple Developer. Une fois les certificats configurés, elle pourra être ajoutée au Wallet.',
               [{ text: 'OK' }]
             )}
-          >
-            <Text style={previewStyles.downloadBtnText}>Télécharger la carte (.pkpass)</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </Modal>
   );
 }
 
-const qrStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.xl, alignItems: 'center' },
-  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, marginBottom: Spacing.lg },
-  title: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
-  sub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.xl },
-  qrBox: { backgroundColor: '#fff', padding: 16, borderRadius: 16, marginBottom: Spacing.lg },
-  urlBox: { backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, width: '100%' },
-  urlText: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', fontFamily: 'monospace' },
-  hint: { fontSize: 12, color: Colors.textMuted, marginBottom: Spacing.xl, textAlign: 'center' },
-  closeBtn: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, width: '100%', alignItems: 'center', marginBottom: 8 },
-  closeBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
-});
-
-const importStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, maxHeight: '90%' },
-  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
-  sub: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 18 },
-  mono: { fontFamily: 'monospace', color: Colors.gold },
-  exampleBox: { backgroundColor: Colors.background, borderRadius: BorderRadius.sm, padding: Spacing.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  exampleText: { fontSize: 11, color: Colors.textMuted, fontFamily: 'monospace', lineHeight: 18 },
-  input: { backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, color: Colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: Colors.border, height: 140, marginBottom: Spacing.sm, fontFamily: 'monospace' },
-  preview: { fontSize: 13, color: Colors.success, marginBottom: Spacing.md, fontWeight: '600' },
-  buttons: { flexDirection: 'row', gap: Spacing.md, paddingBottom: 32 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  cancelText: { color: Colors.textSecondary, fontWeight: '600' },
-  importBtn: { flex: 2, backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  importText: { color: '#000', fontWeight: '700', fontSize: 15 },
-});
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.lg, paddingTop: 60 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
-  count: { fontSize: 14, color: Colors.textSecondary },
   headerActions: { flexDirection: 'row', gap: Spacing.sm },
-  headerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card,
     marginHorizontal: Spacing.lg, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md,
     marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border,
+    ...Shadows.card,
   },
-  searchIcon: { marginRight: Spacing.sm },
   searchInput: { flex: 1, color: Colors.textPrimary, fontSize: 15, paddingVertical: 12 },
-  clearSearch: { fontSize: 16, color: Colors.textSecondary, padding: 4 },
   filtersScroll: { paddingLeft: Spacing.lg, marginBottom: Spacing.md, flexGrow: 0 },
-  filterChip: {
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderRadius: BorderRadius.full,
-    backgroundColor: Colors.card, marginRight: Spacing.sm, borderWidth: 1, borderColor: Colors.border,
-  },
-  filterChipActive: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  filterChipText: { fontSize: 13, color: Colors.textSecondary },
-  filterChipTextActive: { color: '#000', fontWeight: '600' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.xl },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.sm },
-  emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
+  emptyContainer: { flex: 1, justifyContent: 'center' },
   fab: {
-    position: 'absolute', bottom: 90, right: Spacing.lg,
-    width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.gold,
-    alignItems: 'center', justifyContent: 'center', shadowColor: Colors.gold,
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8,
+    position: 'absolute', bottom: 96, right: Spacing.lg,
+    width: 58, height: 58, borderRadius: 29, backgroundColor: Colors.gold,
+    alignItems: 'center', justifyContent: 'center', ...Shadows.fab,
   },
-  fabText: { fontSize: 32, color: '#000', lineHeight: 36 },
   confirmOverlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
-  confirmSheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.xl },
-  confirmTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.md },
-  confirmText: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.md },
-  confirmStamps: { fontSize: 18, color: Colors.gold, fontWeight: '700', marginBottom: Spacing.md },
-  rewardAlert: { backgroundColor: 'rgba(76,175,80,0.15)', borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: 'rgba(76,175,80,0.3)' },
-  rewardAlertText: { color: Colors.success, fontWeight: '600' },
+  confirmSheet: {
+    backgroundColor: Colors.card, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+  },
+  confirmIconWrap: {
+    width: 52, height: 52, borderRadius: 26, backgroundColor: Colors.goldSoft,
+    alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md,
+  },
+  confirmTitle: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.sm },
+  confirmText: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 21 },
+  confirmStamps: { fontSize: 17, color: Colors.goldDark, fontWeight: '800', marginBottom: Spacing.md },
+  rewardAlert: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.successSoft, borderRadius: BorderRadius.md,
+    padding: Spacing.md, marginBottom: Spacing.md,
+  },
+  rewardAlertText: { color: Colors.success, fontWeight: '600', flex: 1 },
   confirmButtons: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
-  cancelButton: { flex: 1, backgroundColor: Colors.background, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  cancelButtonText: { color: Colors.textSecondary, fontWeight: '600' },
-  confirmButton: { flex: 1, backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  confirmButtonText: { color: '#000', fontWeight: '700' },
 });
 
 const cardStyles = StyleSheet.create({
-  card: { backgroundColor: Colors.card, borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  card: {
+    backgroundColor: Colors.card, borderRadius: BorderRadius.lg, padding: Spacing.md,
+    marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.cardBorder,
+    ...Shadows.card,
+  },
   top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.border, position: 'relative' },
-  avatarGold: { borderColor: Colors.gold },
-  initials: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  rewardDot: { position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.gold },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  email: { fontSize: 12, color: Colors.textSecondary },
+  name: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  email: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   badges: { alignItems: 'flex-end', gap: 4 },
-  points: { fontSize: 14, color: Colors.gold, fontWeight: '700' },
-  discountBadge: { backgroundColor: 'rgba(201,168,76,0.15)', borderRadius: BorderRadius.sm, paddingHorizontal: 8, paddingVertical: 2 },
-  discountText: { fontSize: 11, color: Colors.gold, fontWeight: '600' },
-  stampsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
-  stampDots: { flexDirection: 'row', gap: 4, flex: 1, flexWrap: 'wrap' },
-  stampDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
-  stampDotFilled: { backgroundColor: Colors.gold, borderColor: Colors.gold },
-  stampsCount: { fontSize: 12, color: Colors.textSecondary, marginLeft: Spacing.sm },
-  pointsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(201,168,76,0.15)', borderRadius: BorderRadius.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  pointsBadgeText: { fontSize: 13, color: Colors.gold, fontWeight: '700' },
-  pointsBar: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md, paddingTop: 2 },
+  points: { fontSize: 14, color: Colors.goldDark, fontWeight: '800' },
+  stampsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md, gap: Spacing.sm },
+  pointsBar: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md },
   pointsBarText: { fontSize: 12, color: Colors.textSecondary },
   actions: { flexDirection: 'row', gap: Spacing.sm },
-  actionBtn: { flex: 1, backgroundColor: Colors.gold, borderRadius: BorderRadius.sm, padding: Spacing.sm, alignItems: 'center' },
-  actionBtnText: { fontSize: 12, color: '#000', fontWeight: '700' },
-  actionBtnOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border },
-  actionBtnOutlineText: { fontSize: 12, color: Colors.textSecondary },
+  actionPrimary: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    backgroundColor: Colors.gold, borderRadius: BorderRadius.sm, paddingVertical: 9,
+  },
+  actionPrimaryText: { fontSize: 12, color: Colors.onGold, fontWeight: '700' },
+  actionGhost: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border,
+    borderRadius: BorderRadius.sm, paddingVertical: 9,
+  },
+  actionGhostText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+});
+
+const qrStyles = StyleSheet.create({
+  body: { alignItems: 'center' },
+  qrBox: { backgroundColor: '#fff', padding: 16, borderRadius: BorderRadius.lg, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border },
+  urlBox: { backgroundColor: Colors.inputBg, borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, alignSelf: 'stretch' },
+  urlText: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', fontFamily: 'monospace' },
+  hint: { fontSize: 12, color: Colors.textMuted, marginBottom: Spacing.lg, textAlign: 'center' },
+});
+
+const importStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: Colors.card, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.lg, maxHeight: '90%',
+  },
+  handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, marginBottom: 6 },
+  sub: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 19 },
+  mono: { fontFamily: 'monospace', color: Colors.goldDark },
+  exampleBox: { backgroundColor: Colors.inputBg, borderRadius: BorderRadius.sm, padding: Spacing.sm, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  exampleText: { fontSize: 11, color: Colors.textMuted, fontFamily: 'monospace', lineHeight: 18 },
+  input: {
+    backgroundColor: Colors.inputBg, borderRadius: BorderRadius.md, padding: Spacing.md,
+    color: Colors.textPrimary, fontSize: 13, borderWidth: 1, borderColor: Colors.border,
+    height: 140, marginBottom: Spacing.sm, fontFamily: 'monospace',
+  },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.md },
+  preview: { fontSize: 13, color: Colors.success, fontWeight: '600' },
+  buttons: { flexDirection: 'row', gap: Spacing.md, paddingBottom: 32 },
 });
 
 const modalStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: Colors.overlay, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: Colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, maxHeight: '90%' },
+  sheet: {
+    backgroundColor: Colors.card, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.lg, maxHeight: '90%',
+  },
   handle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.lg },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary, marginBottom: Spacing.lg },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.lg },
   row: { flexDirection: 'row', gap: Spacing.md },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.8 },
-  input: { backgroundColor: Colors.background, borderRadius: BorderRadius.sm, padding: Spacing.md, color: Colors.textPrimary, fontSize: 15, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.md },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.md },
   consentText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
   buttons: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg, paddingBottom: 40 },
-  cancelBtn: { flex: 1, padding: Spacing.md, alignItems: 'center', borderRadius: BorderRadius.md, backgroundColor: Colors.background },
-  cancelBtnText: { color: Colors.textSecondary, fontWeight: '600' },
-  submitBtn: { flex: 2, padding: Spacing.md, alignItems: 'center', borderRadius: BorderRadius.md, backgroundColor: Colors.gold },
-  submitBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
 });
 
 const previewStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: Colors.overlay },
-  container: { flex: 1, padding: Spacing.lg, paddingTop: 60 },
-  closeBtn: { alignSelf: 'flex-end', marginBottom: Spacing.lg },
-  closeBtnText: { color: Colors.textPrimary, fontSize: 16 },
+  container: { flex: 1, padding: Spacing.lg, paddingTop: 56, maxWidth: 480, width: '100%', alignSelf: 'center' },
+  closeBtn: {
+    alignSelf: 'flex-end', marginBottom: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.card, borderRadius: BorderRadius.full, paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  closeBtnText: { color: Colors.textPrimary, fontSize: 14, fontWeight: '600' },
   card: {
     borderRadius: 20, padding: Spacing.lg, marginBottom: Spacing.lg,
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 20,
@@ -783,7 +714,6 @@ const previewStyles = StyleSheet.create({
   stampDotFilled: { backgroundColor: '#fff' },
   stampsCount: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   statsRow: { flexDirection: 'row', gap: Spacing.xl, marginBottom: Spacing.lg },
-  stat: {},
   statValue: { fontSize: 22, fontWeight: '800', color: '#fff' },
   statLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.6 },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
@@ -794,8 +724,4 @@ const previewStyles = StyleSheet.create({
   fakeQr: { width: 60, height: 60, backgroundColor: '#fff', borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
   fakeQrText: { fontSize: 12, color: '#000', fontWeight: '700' },
   disclaimer: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg, lineHeight: 18 },
-  shareBtn: { backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center', marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  shareBtnText: { color: Colors.textPrimary, fontWeight: '600' },
-  downloadBtn: { backgroundColor: Colors.gold, borderRadius: BorderRadius.md, padding: Spacing.md, alignItems: 'center' },
-  downloadBtnText: { color: '#000', fontWeight: '700' },
 });
