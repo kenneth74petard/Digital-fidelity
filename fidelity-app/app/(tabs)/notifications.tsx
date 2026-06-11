@@ -30,13 +30,19 @@ export default function NotificationsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('send');
   const { restaurant } = useRestaurantStore();
   const { notifications, loadNotifications } = useNotificationsStore();
-  const { customers } = useCustomersStore();
+  const { customers, loadCustomers } = useCustomersStore();
 
+  // Charger aussi les clients : en accès direct à cet onglet, le store est
+  // vide et le compteur de destinataires marketing affichait 0
   useEffect(() => {
-    if (restaurant) loadNotifications(restaurant.id);
+    if (restaurant) {
+      loadNotifications(restaurant.id);
+      loadCustomers(restaurant.id);
+    }
   }, [restaurant]);
 
-  const marketingCount = customers.filter((c) => c.marketing_consent).length;
+  // SQLite renvoie 0/1 — Boolean() normalise
+  const marketingCount = customers.filter((c) => Boolean(c.marketing_consent)).length;
   const scheduled = notifications.filter((n) => n.status === 'scheduled');
   const history = notifications.filter((n) => n.status === 'sent' || n.status === 'failed');
 

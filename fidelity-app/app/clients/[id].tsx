@@ -9,7 +9,7 @@ import { useCustomersStore } from '../../stores/customersStore';
 import { useRestaurantStore } from '../../stores/restaurantStore';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { StampHistory } from '../../../shared/types';
-import { Card, Avatar, Button, Badge, StampDots, Input } from '../../components/ui';
+import { Card, Avatar, Button, Badge, StampDots, Input, EmptyState } from '../../components/ui';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -31,6 +31,7 @@ export default function ClientDetailScreen() {
   const {
     selectedCustomer: customer,
     customerHistory: history,
+    error: loadError,
     loadCustomer,
     loadHistory,
     updateCustomer,
@@ -50,13 +51,15 @@ export default function ClientDetailScreen() {
   const [pointsToAdd, setPointsToAdd] = useState('100');
   const [saving, setSaving] = useState(false);
 
+  // Attendre que le restaurant soit chargé : en accès direct par URL,
+  // loadCustomer partait avant et échouait (restaurantId manquant)
   useEffect(() => {
-    if (id) {
+    if (id && restaurant) {
       loadCustomer(id);
       loadHistory(id);
     }
     return () => clearSelected();
-  }, [id]);
+  }, [id, restaurant]);
 
   useEffect(() => {
     if (customer) {
@@ -134,6 +137,18 @@ export default function ClientDetailScreen() {
   };
 
   if (!customer) {
+    if (loadError) {
+      return (
+        <View style={styles.loadingContainer}>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Client introuvable"
+            subtitle="Ce client n'existe pas ou n'a pas pu être chargé."
+          />
+          <Button label="Retour" variant="secondary" onPress={() => router.back()} style={{ marginTop: Spacing.md, minWidth: 200 }} />
+        </View>
+      );
+    }
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={Colors.gold} size="large" />

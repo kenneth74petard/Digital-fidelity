@@ -153,5 +153,5 @@ export const useCustomersStore = create<CustomersState>((set, get) => ({
     }
   },
 
-  clearSelected: () => set({ selectedCustomer: null, customerHistory: [] }),
+  clearSelected: () => set({ selectedCustomer: null, customerHistory: [], error: null }),
 }));

@@ -211,7 +211,7 @@ export default function ClientsScreen() {
 
       {/* Confirmation tampon */}
       {stampConfirm && (
-        <Modal transparent animationType="fade">
+        <Modal transparent animationType="fade" onRequestClose={() => setStampConfirm(null)}>
           <View style={styles.confirmOverlay}>
             <View style={styles.confirmSheet}>
               <View style={styles.confirmIconWrap}>
@@ -497,6 +497,25 @@ function AddCustomerModal({
 
 function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
   const stampGoal = restaurant?.stamp_goal || 10;
+  const registerUrl = getRegisterUrl(restaurant?.id || '');
+
+  // Partage natif si dispo (mobile), sinon copie dans le presse-papier (web)
+  const handleShare = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && (navigator as any).share) {
+        await (navigator as any).share({ title: `Carte de fidélité — ${restaurant?.name}`, url: registerUrl });
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(registerUrl);
+        Alert.alert('Lien copié', 'Le lien d\'inscription a été copié dans le presse-papier.');
+        return;
+      }
+      Alert.alert('Lien d\'inscription', registerUrl);
+    } catch {
+      Alert.alert('Lien d\'inscription', registerUrl);
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -562,7 +581,7 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
             Sans certificat Apple Developer, la carte ne peut pas être installée dans Apple Wallet.
           </Text>
 
-          <Button label="Partager le QR d'inscription" variant="secondary" onPress={() => {}} style={{ marginBottom: Spacing.md }} />
+          <Button label="Partager le QR d'inscription" icon="share-outline" variant="secondary" onPress={handleShare} style={{ marginBottom: Spacing.md }} />
           <Button
             label="Télécharger la carte (.pkpass)"
             onPress={() => Alert.alert(
