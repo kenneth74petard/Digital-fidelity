@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, Platform,
+  ScrollView, Platform,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 // DateTimePicker only works on native — use text input fallback on web
 const DateTimePicker = Platform.OS !== 'web'
@@ -112,10 +113,10 @@ function SendTab({
 
   const handleSend = () => {
     if (!title.trim() || !body.trim()) {
-      Alert.alert('Erreur', 'Le titre et le message sont requis');
+      showAlert('Erreur', 'Le titre et le message sont requis');
       return;
     }
-    Alert.alert(
+    showAlert(
       'Confirmer l\'envoi',
       `Envoyer "${title}" à ${marketingCount} client(s) avec consentement marketing ?`,
       [
@@ -130,11 +131,11 @@ function SendTab({
               const msg = result.push_dry_run
                 ? `Notification enregistrée. En mode live, elle sera envoyée à ${result.sent_count} client(s).`
                 : `Notification envoyée à ${result.sent_count} client(s)`;
-              Alert.alert('Succès', msg);
+              showAlert('Succès', msg);
               setTitle('');
               setBody('');
             } catch (err: any) {
-              Alert.alert('Erreur', err.message);
+              showAlert('Erreur', err.message);
             } finally {
               setSending(false);
             }
@@ -243,7 +244,7 @@ function ScheduleTab({
 
   const handleSchedule = async () => {
     if (!title.trim() || !body.trim()) {
-      Alert.alert('Erreur', 'Le titre et le message sont requis');
+      showAlert('Erreur', 'Le titre et le message sont requis');
       return;
     }
     try {
@@ -255,11 +256,11 @@ function ScheduleTab({
         type,
         scheduled_at: scheduledDate.toISOString(),
       });
-      Alert.alert('Planifiée', `Notification planifiée pour le ${format(scheduledDate, "d MMMM à HH'h'mm", { locale: fr })}`);
+      showAlert('Planifiée', `Notification planifiée pour le ${format(scheduledDate, "d MMMM à HH'h'mm", { locale: fr })}`);
       setTitle('');
       setBody('');
     } catch (err: any) {
-      Alert.alert('Erreur', err.message);
+      showAlert('Erreur', err.message);
     } finally {
       setSubmitting(false);
     }
@@ -324,7 +325,7 @@ function ScheduleTab({
           <Text style={[styles.fieldLabel, { marginTop: Spacing.md }]}>Notifications planifiées</Text>
           {scheduled.map((n) => (
             <NotifItem key={n.id} notification={n} onCancel={() => {
-              Alert.alert('Annuler ?', 'Voulez-vous annuler cette notification planifiée ?', [
+              showAlert('Annuler ?', 'Voulez-vous annuler cette notification planifiée ?', [
                 { text: 'Non', style: 'cancel' },
                 { text: 'Oui', onPress: () => cancelNotification(n.id, restaurantId) },
               ]);

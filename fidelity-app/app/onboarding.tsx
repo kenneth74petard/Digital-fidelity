@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  ScrollView, StyleSheet, Alert,
-} from 'react-native';
+  ScrollView, StyleSheet, } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRestaurantStore } from '../stores/restaurantStore';
@@ -23,7 +23,7 @@ export default function OnboardingScreen() {
 
   const handleSetup = async () => {
     if (!name.trim()) {
-      Alert.alert('Erreur', 'Le nom du commerce est requis');
+      showAlert('Erreur', 'Le nom du commerce est requis');
       return;
     }
     try {
@@ -44,7 +44,7 @@ export default function OnboardingScreen() {
         setStep(2);
       }
     } catch {
-      Alert.alert('Erreur', 'Impossible de créer le commerce. Vérifiez que le serveur est démarré.');
+      showAlert('Erreur', 'Impossible de créer le commerce. Vérifiez que le serveur est démarré.');
     } finally {
       setIsSubmitting(false);
     }

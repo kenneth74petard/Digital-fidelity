@@ -7,12 +7,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // 3. Fallback localhost pour le dev local
 function getBaseUrl(): string {
   const envUrl = (process.env.EXPO_PUBLIC_API_URL || '').trim();
+  const onWeb = typeof window !== 'undefined' && !!window.location;
+
   if (envUrl) {
+    // Page HTTPS + API en http:// = mixed content bloqué par le navigateur.
+    // On ignore l'env et on passe par le proxy Vercel (URLs relatives).
+    if (onWeb && window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
+      return '';
+    }
     return envUrl;
   }
 
   // On web, use relative URLs — Vercel rewrites proxy /api/* to the backend
-  if (typeof window !== 'undefined' && window.location) {
+  if (onWeb) {
     return '';
   }
 
@@ -41,8 +48,12 @@ api.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${API_TOKEN}`;
   }
 
+  // Pas de scope sur /restaurant/setup : le backend refuse (403) la création
+  // si un x-restaurant-id est présent — un vieux restaurantId en localStorage
+  // bloquait sinon définitivement le re-onboarding.
+  const isSetupRoute = String(config.url || '').includes('/restaurant/setup');
   const scopedRestaurantId = extractRestaurantIdFromConfig(config) || String(await AsyncStorage.getItem(RESTAURANT_ID_KEY) || '').trim();
-  if (scopedRestaurantId) {
+  if (scopedRestaurantId && !isSetupRoute) {
     config.headers = config.headers || {};
     config.headers['x-restaurant-id'] = scopedRestaurantId;
   }

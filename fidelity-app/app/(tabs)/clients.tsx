@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Modal, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Switch,
+  Modal, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,12 +74,12 @@ export default function ClientsScreen() {
     try {
       const result = await addStamp(customer.id);
       if (result.reward_claimed) {
-        Alert.alert('Récompense !', result.message);
+        showAlert('Récompense !', result.message);
       } else {
-        Alert.alert('Tampon ajouté', result.message);
+        showAlert('Tampon ajouté', result.message);
       }
     } catch (err) {
-      Alert.alert('Erreur', 'Impossible d\'ajouter le tampon');
+      showAlert('Erreur', 'Impossible d\'ajouter le tampon');
     }
     setStampConfirm(null);
   };
@@ -148,9 +149,9 @@ export default function ClientsScreen() {
               onAddPoints={async () => {
                 try {
                   const result = await addStamp(item.id);
-                  Alert.alert('Points ajoutés', result.message);
+                  showAlert('Points ajoutés', result.message);
                   loadData();
-                } catch { Alert.alert('Erreur', 'Impossible d\'ajouter les points'); }
+                } catch { showAlert('Erreur', 'Impossible d\'ajouter les points'); }
               }}
               onView={() => { setSelectedCustomer(item); setShowPreviewModal(true); }}
               onDetail={() => router.push(`/clients/${item.id}` as any)}
@@ -322,21 +323,21 @@ function ImportCsvModal({ visible, restaurantId, onClose, onImported }: { visibl
   const handleImport = async () => {
     const rows = parseCsv(csv);
     if (rows.length === 0) {
-      Alert.alert('Erreur', 'Aucune ligne valide détectée. Vérifiez le format.');
+      showAlert('Erreur', 'Aucune ligne valide détectée. Vérifiez le format.');
       return;
     }
     setImporting(true);
     try {
       const res = await customersApi.importCsv(restaurantId, rows);
       const { created, duplicates, errors } = res.data.data;
-      Alert.alert(
+      showAlert(
         'Import terminé',
         `${created} client(s) créé(s)\n${duplicates} doublon(s) ignoré(s)${errors.length > 0 ? `\n${errors.length} erreur(s)` : ''}`,
       );
       setCsv('');
       onImported();
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Import échoué');
+      showAlert('Erreur', err.message || 'Import échoué');
     } finally {
       setImporting(false);
     }
@@ -414,11 +415,11 @@ function AddCustomerModal({
 
   const handleSubmit = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
-      Alert.alert('Erreur', 'Prénom, nom et email sont requis');
+      showAlert('Erreur', 'Prénom, nom et email sont requis');
       return;
     }
     if (!gdprConsent) {
-      Alert.alert('Erreur', 'Le consentement RGPD est obligatoire');
+      showAlert('Erreur', 'Le consentement RGPD est obligatoire');
       return;
     }
 
@@ -436,7 +437,7 @@ function AddCustomerModal({
       reset();
       onCreated();
     } catch (err: any) {
-      Alert.alert('Erreur', err.message || 'Impossible de créer le client');
+      showAlert('Erreur', err.message || 'Impossible de créer le client');
     } finally {
       setSubmitting(false);
     }
@@ -508,12 +509,12 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
       }
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(registerUrl);
-        Alert.alert('Lien copié', 'Le lien d\'inscription a été copié dans le presse-papier.');
+        showAlert('Lien copié', 'Le lien d\'inscription a été copié dans le presse-papier.');
         return;
       }
-      Alert.alert('Lien d\'inscription', registerUrl);
+      showAlert('Lien d\'inscription', registerUrl);
     } catch {
-      Alert.alert('Lien d\'inscription', registerUrl);
+      showAlert('Lien d\'inscription', registerUrl);
     }
   };
 
@@ -584,7 +585,7 @@ function CardPreviewModal({ visible, customer, restaurant, onClose }: any) {
           <Button label="Partager le QR d'inscription" icon="share-outline" variant="secondary" onPress={handleShare} style={{ marginBottom: Spacing.md }} />
           <Button
             label="Télécharger la carte (.pkpass)"
-            onPress={() => Alert.alert(
+            onPress={() => showAlert(
               'Wallet non configuré',
               'Cette carte ne peut pas être installée sans certificat Apple Developer. Une fois les certificats configurés, elle pourra être ajoutée au Wallet.',
               [{ text: 'OK' }]

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, Modal, Switch, Platform,
+  ScrollView, Modal, Switch, Platform,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useRestaurantStore } from '../../stores/restaurantStore';
@@ -28,24 +29,24 @@ export default function SettingsScreen() {
   const marketingCount = customers.filter((c) => Boolean(c.marketing_consent)).length;
 
   const handleSave = async () => {
-    if (!name.trim()) { Alert.alert('Erreur', 'Le nom est requis'); return; }
+    if (!name.trim()) { showAlert('Erreur', 'Le nom est requis'); return; }
     try {
       setSaving(true);
       await updateRestaurant({ name, description, loyalty_type: loyaltyType, stamp_goal: stampGoal, points_per_visit: pointsPerVisit });
-      Alert.alert('Sauvegardé', 'Vos paramètres ont été mis à jour');
+      showAlert('Sauvegardé', 'Vos paramètres ont été mis à jour');
     } catch {
-      Alert.alert('Erreur', 'Impossible de sauvegarder');
+      showAlert('Erreur', 'Impossible de sauvegarder');
     } finally {
       setSaving(false);
     }
   };
 
   const handleExportData = () => {
-    Alert.alert('Export RGPD', `Les données de ${customers.length} client(s) seraient exportées en JSON.\n\n(Intégrez expo-sharing pour le partage réel)`);
+    showAlert('Export RGPD', `Les données de ${customers.length} client(s) seraient exportées en JSON.\n\n(Intégrez expo-sharing pour le partage réel)`);
   };
 
   const handleReset = () => {
-    Alert.alert(
+    showAlert(
       '⚠️ Réinitialisation',
       'Toutes les données seront supprimées. Cette action est irréversible.',
       [
@@ -72,7 +73,7 @@ export default function SettingsScreen() {
       return;
     }
 
-    Alert.alert('Apparence', 'Le thème a été enregistré. Rechargez la page pour l\'appliquer partout.');
+    showAlert('Apparence', 'Le thème a été enregistré. Rechargez la page pour l\'appliquer partout.');
   };
 
   return (

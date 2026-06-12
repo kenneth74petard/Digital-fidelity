@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Modal, Switch,
+  ScrollView, ActivityIndicator, Modal, Switch,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomersStore } from '../../stores/customersStore';
@@ -79,9 +80,9 @@ export default function ClientDetailScreen() {
       setSaving(true);
       await updateCustomer(id!, { first_name: firstName, last_name: lastName, email, phone, marketing_consent: marketingConsent });
       setEditing(false);
-      Alert.alert('Mis à jour', 'Informations mises à jour');
+      showAlert('Mis à jour', 'Informations mises à jour');
     } catch {
-      Alert.alert('Erreur', 'Impossible de mettre à jour');
+      showAlert('Erreur', 'Impossible de mettre à jour');
     } finally {
       setSaving(false);
     }
@@ -91,31 +92,31 @@ export default function ClientDetailScreen() {
     try {
       const result = await addStamp(id!);
       if (result.reward_claimed) {
-        Alert.alert('Récompense !', result.message);
+        showAlert('Récompense !', result.message);
       } else {
-        Alert.alert('Tampon ajouté', result.message);
+        showAlert('Tampon ajouté', result.message);
       }
       loadHistory(id!);
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'ajouter le tampon');
+      showAlert('Erreur', 'Impossible d\'ajouter le tampon');
     }
   };
 
   const handleAddPoints = async () => {
     const pts = parseInt(pointsToAdd);
-    if (isNaN(pts) || pts <= 0) { Alert.alert('Erreur', 'Entrez un nombre valide'); return; }
+    if (isNaN(pts) || pts <= 0) { showAlert('Erreur', 'Entrez un nombre valide'); return; }
     try {
       await addPoints(id!, pts);
       setShowPointsModal(false);
       loadHistory(id!);
-      Alert.alert('Points ajoutés', `${pts} points ajoutés`);
+      showAlert('Points ajoutés', `${pts} points ajoutés`);
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'ajouter les points');
+      showAlert('Erreur', 'Impossible d\'ajouter les points');
     }
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    showAlert(
       '⚠️ Supprimer le client',
       `Toutes les données de ${customer?.first_name} ${customer?.last_name} seront définitivement supprimées conformément au RGPD. Cette action est irréversible.`,
       [
@@ -128,7 +129,7 @@ export default function ClientDetailScreen() {
               await deleteCustomer(id!);
               router.back();
             } catch {
-              Alert.alert('Erreur', 'Impossible de supprimer');
+              showAlert('Erreur', 'Impossible de supprimer');
             }
           },
         },
